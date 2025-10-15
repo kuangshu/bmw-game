@@ -3,6 +3,7 @@ import GameBoard from './components/GameBoard'
 import DiceRoller from './components/DiceRoller'
 import PlayerHand from './components/PlayerHand'
 import { GameState, Player } from './types/game'
+import { GameProvider, useGameContext } from './contexts/GameContext'
 
 const initialGameState: GameState = {
   players: [],
@@ -12,10 +13,11 @@ const initialGameState: GameState = {
   winner: null
 }
 
-function App() {
+function AppContent() {
   const [gameState, setGameState] = useState<GameState>(initialGameState)
   const [orientation, setOrientation] = useState<'portrait' | 'landscape'>('portrait')
   const [isMobile, setIsMobile] = useState(false)
+  const { generateTiles } = useGameContext()
 
   // 检测设备和屏幕方向
   useEffect(() => {
@@ -40,6 +42,9 @@ function App() {
       cards: [],
       energy: 0
     }))
+
+    // 生成地图格子
+    generateTiles()
 
     setGameState({
       ...initialGameState,
@@ -134,6 +139,14 @@ function App() {
         </div>
       </div>
     </div>
+  )
+}
+
+function App() {
+  return (
+    <GameProvider>
+      <AppContent />
+    </GameProvider>
   )
 }
 

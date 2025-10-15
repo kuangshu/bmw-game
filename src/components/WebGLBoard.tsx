@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from "react";
 import * as THREE from "three";
 import { GameState } from "../types/game";
+import { useGameContext } from "../contexts/GameContext";
 
 interface WebGLBoardProps {
   gameState: GameState;
@@ -8,6 +9,7 @@ interface WebGLBoardProps {
 
 const WebGLBoard: React.FC<WebGLBoardProps> = ({ gameState }) => {
   const mountRef = useRef<HTMLDivElement>(null);
+  const { tiles } = useGameContext();
 
   useEffect(() => {
     if (!mountRef.current) return;
@@ -54,8 +56,8 @@ const WebGLBoard: React.FC<WebGLBoardProps> = ({ gameState }) => {
     scene.add(ground);
 
     // 创建格子
-    const tiles: THREE.Mesh[] = [];
-    for (let i = 0; i < 81; i++) {
+    const threeTiles: THREE.Mesh[] = [];
+    tiles.forEach((tileData, i) => {
       const row = Math.floor(i / gridSize);
       const col = i % gridSize;
 
@@ -63,16 +65,21 @@ const WebGLBoard: React.FC<WebGLBoardProps> = ({ gameState }) => {
       let material: THREE.Material;
 
       // 根据格子类型设置颜色
-      if ([20, 32, 44, 56, 68, 80].includes(i)) {
-        material = new THREE.MeshLambertMaterial({ color: 0x800080 }); // BOSS格 - 紫色
-      } else if (i % 7 === 0 && i > 0) {
-        material = new THREE.MeshLambertMaterial({ color: 0xffd700 }); // 宝箱格 - 金色
-      } else if (i % 9 === 0 && i > 0) {
-        material = new THREE.MeshLambertMaterial({ color: 0xff4500 }); // 反转格 - 红色
-      } else if (i % 11 === 0 && i > 0) {
-        material = new THREE.MeshLambertMaterial({ color: 0x32cd32 }); // 补给站格 - 绿色
-      } else {
-        material = new THREE.MeshLambertMaterial({ color: 0xd3d3d3 }); // 空白格 - 浅灰色
+      switch (tileData.type) {
+        case 'boss':
+          material = new THREE.MeshLambertMaterial({ color: 0x800080 }); // BOSS格 - 紫色
+          break;
+        case 'treasure':
+          material = new THREE.MeshLambertMaterial({ color: 0xffd700 }); // 宝箱格 - 金色
+          break;
+        case 'reverse':
+          material = new THREE.MeshLambertMaterial({ color: 0xff4500 }); // 反转格 - 红色
+          break;
+        case 'supply':
+          material = new THREE.MeshLambertMaterial({ color: 0x32cd32 }); // 补给站格 - 绿色
+          break;
+        default:
+          material = new THREE.MeshLambertMaterial({ color: 0xd3d3d3 }); // 空白格 - 浅灰色
       }
 
       const tile = new THREE.Mesh(geometry, material);
@@ -83,8 +90,8 @@ const WebGLBoard: React.FC<WebGLBoardProps> = ({ gameState }) => {
       );
 
       scene.add(tile);
-      tiles.push(tile);
-    }
+      threeTiles.push(tile);
+    });
 
     // 创建玩家标记（小球）
     const playerMarkers: THREE.Mesh[] = [];
@@ -158,7 +165,7 @@ const WebGLBoard: React.FC<WebGLBoardProps> = ({ gameState }) => {
       }
       renderer.dispose();
     };
-  }, [gameState]);
+    }, [gameState, tiles]);
 
   return (
     <div
