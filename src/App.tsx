@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import GameBoard from './components/GameBoard'
 import DiceRoller from './components/DiceRoller'
 import PlayerHand from './components/PlayerHand'
-import { GameState, Player } from './types/game'
+import { GameState, PlayerData, Card } from './types/game'
+import { Player } from './entities/Player'
 import { GameProvider, useGameContext } from './contexts/GameContext'
 
 const initialGameState: GameState = {
@@ -33,15 +34,113 @@ function AppContent() {
     return () => window.removeEventListener('resize', checkDeviceAndOrientation)
   }, [])
 
+  // 创建完整的牌堆（60张牌：52张能量牌 + 8张法术牌）
+  const createCardDeck = (): Card[] => {
+    const deck: Card[] = []
+    let cardId = 1
+    
+    // 能量卡配置
+    const energyCardTypes = [
+      { name: '甜筒', value: 1, count: 20 },
+      { name: '薯条', value: 3, count: 16 },
+      { name: '芝士汉堡', value: 6, count: 10 },
+      { name: '咸蛋黄汉堡', value: 6, count: 6 }
+    ]
+    
+    // 生成能量卡（总共52张）
+    energyCardTypes.forEach(cardType => {
+      for (let i = 0; i < cardType.count; i++) {
+        deck.push({
+          id: cardId++,
+          type: 'energy',
+          value: cardType.value,
+          name: cardType.name,
+          description: `提供 ${cardType.value} 点能量`
+        })
+      }
+    })
+    
+    // 法术卡配置
+    const spellCardTypes = [
+      { 
+        name: '定身术', 
+        value: 3, 
+        effect: 'fix_dice', 
+        description: '指定下一次扔骰子的点数（消耗3能量）',
+        count: 2
+      },
+      { 
+        name: '分身术', 
+        value: 3, 
+        effect: 'extra_turn', 
+        description: '多进行一次扔骰子的行为（消耗3能量）',
+        count: 2
+      },
+      { 
+        name: '聚形散气', 
+        value: 6, 
+        effect: 'swap_position', 
+        description: '指定一个玩家和其交换位置（消耗6能量）',
+        count: 2
+      },
+      { 
+        name: '铜墙铁壁', 
+        value: 4, 
+        effect: 'spell_shield', 
+        description: '抵消其他人对玩家使用的法术效果（消耗4能量）',
+        count: 2
+      }
+    ]
+    
+    // 生成法术卡（总共8张）
+    spellCardTypes.forEach(cardType => {
+      for (let i = 0; i < cardType.count; i++) {
+        deck.push({
+          id: cardId++,
+          type: 'spell',
+          value: cardType.value,
+          name: cardType.name,
+          effect: cardType.effect,
+          description: cardType.description
+        })
+      }
+    })
+    
+    return deck
+  }
+
+  // 从牌堆中随机抽取指定数量的卡片
+  const drawCardsFromDeck = (deck: Card[], count: number): { drawnCards: Card[], remainingDeck: Card[] } => {
+    const shuffledDeck = [...deck].sort(() => Math.random() - 0.5)
+    const drawnCards = shuffledDeck.slice(0, count)
+    const remainingDeck = shuffledDeck.slice(count)
+    
+    return { drawnCards, remainingDeck }
+  }
+
   // 初始化游戏
   const initializeGame = (playerCount: number) => {
-    const players: Player[] = Array.from({ length: playerCount }, (_, index) => ({
-      id: index + 1,
-      name: `玩家 ${index + 1}`,
-      position: 0,
-      cards: [],
-      energy: 0
-    }))
+    // 创建完整牌堆
+    const fullDeck = createCardDeck()
+    
+    // 为每个玩家抽取4张起始手牌并创建Player实例
+    const players: PlayerData[] = []
+    let currentDeck = fullDeck
+    
+    for (let i = 0; i < playerCount; i++) {
+      const { drawnCards, remainingDeck } = drawCardsFromDeck(currentDeck, 4)
+      currentDeck = remainingDeck
+      // 创建Player实例并转换为PlayerData用于状态管理
+      const player = new Player(
+        i + 1,
+        `玩家 ${i + 1}`,
+        'warrior', // 默认角色
+        0, // 初始位置
+        drawnCards
+      )
+      
+      players.push(player.toJSON())
+    }
 
     // 生成地图格子
     generateTiles()

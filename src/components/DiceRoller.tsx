@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { GameState, DiceResult, TileType } from '../types/game'
+import { Player } from '../entities/Player'
 
 interface DiceRollerProps {
   gameState: GameState
@@ -21,7 +22,7 @@ const DiceRoller: React.FC<DiceRollerProps> = ({ gameState, setGameState }) => {
   const [diceResult, setDiceResult] = useState<DiceResult | null>(null)
   const [isRolling, setIsRolling] = useState(false)
 
-  const handleTileEffect = (playerPosition: number, playerEnergy: number) => {
+  const handleTileEffect = (playerPosition: number, playerEnergy: number, diceTotal: number) => {
     const tileType = getTileType(playerPosition)
     
     switch (tileType) {
@@ -29,6 +30,7 @@ const DiceRoller: React.FC<DiceRollerProps> = ({ gameState, setGameState }) => {
         const bossIndex = BOSS_POSITIONS.indexOf(playerPosition)
         const requirement = BOSS_REQUIREMENTS[bossIndex]
         
+        // 如果能量足够，直接击败BOSS
         if (playerEnergy >= requirement) {
           alert(`🎉 击败BOSS！消耗了${requirement}点能量`)
           return {
@@ -36,12 +38,16 @@ const DiceRoller: React.FC<DiceRollerProps> = ({ gameState, setGameState }) => {
             cardsGained: 1
           }
         } else {
+          // 能量不足，启动BOSS战斗
           const previousBoss = BOSS_POSITIONS.filter(pos => pos < playerPosition).pop()
-          const newPosition = previousBoss !== undefined ? previousBoss : 0
-          alert(`💥 BOSS太强了！需要${requirement}点能量，你只有${playerEnergy}点。回到上一个BOSS位置`)
+          const originalPosition = previousBoss !== undefined ? previousBoss : 0
+          
           return {
-            positionChange: newPosition - playerPosition,
-            message: `回到位置 ${newPosition}`
+            startBossBattle: true,
+            bossPosition: playerPosition,
+            bossRequirement: requirement,
+            originalPosition: originalPosition,
+            remainingSteps: diceTotal - (playerPosition - originalPosition)
           }
         }
         
@@ -51,7 +57,7 @@ const DiceRoller: React.FC<DiceRollerProps> = ({ gameState, setGameState }) => {
         
       case 'reverse':
         alert('🔄 进入反转格，下一回合后退')
-        return { reverseNextTurn: true }
+        return { positionChange: -3, reverseNextTurn: true }
         
       case 'supply':
         alert('⚡ 获得2张功能牌！')
@@ -68,12 +74,23 @@ const DiceRoller: React.FC<DiceRollerProps> = ({ gameState, setGameState }) => {
     setIsRolling(true)
     
     setTimeout(() => {
-      const dice1 = Math.floor(Math.random() * 6) + 1
-      const dice2 = Math.floor(Math.random() * 6) + 1
+      let dice1, dice2, total
+      
+      // 检查是否有定身术效果
+      if (gameState.activeSpells?.fixedDice) {
+        total = gameState.activeSpells.fixedDice
+        dice1 = Math.min(6, Math.floor(total / 2))
+        dice2 = total - dice1
+      } else {
+        dice1 = Math.floor(Math.random() * 6) + 1
+        dice2 = Math.floor(Math.random() * 6) + 1
+        total = dice1 + dice2
+      }
+      
       const result: DiceResult = {
         dice1,
         dice2,
-        total: dice1 + dice2
+        total
       }
       
       setDiceResult(result)
@@ -81,44 +98,109 @@ const DiceRoller: React.FC<DiceRollerProps> = ({ gameState, setGameState }) => {
       
       const currentPlayerIndex = gameState.currentPlayerIndex
       const players = [...gameState.players]
-      const currentPlayer = { ...players[currentPlayerIndex] }
+      const currentPlayerData = players[currentPlayerIndex]
+      const currentPlayer = Player.fromData(currentPlayerData)
+      
+      if (gameState.activeSpells?.swapTarget) {
+        const targetPlayerId = gameState.activeSpells.swapTarget
+        const targetPlayerIndex = players.findIndex(p => p.id === targetPlayerId)
+        
+        if (targetPlayerIndex !== -1 && targetPlayerIndex !== currentPlayerIndex) {
+          // 交换位置
+          const targetPlayer = Player.fromData(players[targetPlayerIndex])
+          const tempPosition = currentPlayer.position
+          currentPlayer.position = targetPlayer.position
+          targetPlayer.position = tempPosition
+          
+          alert(`🔄 ${currentPlayer.name} 与 ${targetPlayer.name} 交换了位置`)
+          
+          // 更新玩家数组
+          players[currentPlayerIndex] = currentPlayer.toJSON()
+          players[targetPlayerIndex] = targetPlayer.toJSON()
+          
+          // 清除法术效果
+          const newActiveSpells = { ...gameState.activeSpells }
+          delete newActiveSpells.swapTarget
+          
+          setGameState({
+            ...gameState,
+            players,
+            activeSpells: Object.keys(newActiveSpells).length > 0 ? newActiveSpells : undefined
+          })
+          setIsRolling(false)
+          return
+        }
+      }
       
       // 移动玩家
-      const newPosition = Math.min(currentPlayer.position + result.total, 80)
-      currentPlayer.position = newPosition
+      currentPlayer.move(result.total)
       
       // 处理格子效果
-      const effect = handleTileEffect(newPosition, currentPlayer.energy)
+      const effect = handleTileEffect(currentPlayer.position, currentPlayer.energy, result.total)
+      
+      if (effect.startBossBattle) {
+        // 启动BOSS战斗
+        setGameState({
+          ...gameState,
+          players,
+          bossBattle: {
+            position: effect.bossPosition!,
+            requirement: effect.bossRequirement!,
+            originalPosition: effect.originalPosition!,
+            remainingSteps: effect.remainingSteps!
+          }
+        })
+        return
+      }
       
       if (effect.positionChange) {
-        currentPlayer.position += effect.positionChange
+        currentPlayer.move(effect.positionChange)
       }
       
       if (effect.energyChange) {
-        currentPlayer.energy = Math.max(0, currentPlayer.energy + effect.energyChange)
+        if (effect.energyChange > 0) {
+          currentPlayer.addEnergy()
+        } else {
+          currentPlayer.consumeEnergy()
+        }
       }
       
       // 检查游戏是否结束
       let gameOver = false
       let winner = null
       
-      if (newPosition >= 80) {
+      if (currentPlayer.position >= 80) {
         gameOver = true
-        winner = currentPlayer
+        winner = currentPlayer.toJSON()
         alert(`🎊 ${currentPlayer.name} 到达终点，游戏结束！`)
       }
       
-      players[currentPlayerIndex] = currentPlayer
+      players[currentPlayerIndex] = currentPlayer.toJSON()
       
-      // 切换到下一个玩家
-      const nextPlayerIndex = gameOver ? currentPlayerIndex : (currentPlayerIndex + 1) % players.length
+      // 检查是否有分身术效果
+      let nextPlayerIndex = currentPlayerIndex
+      let newActiveSpells = { ...gameState.activeSpells }
+      
+      if (gameState.activeSpells?.extraTurn) {
+        // 分身术：不清除当前玩家回合
+        delete newActiveSpells.extraTurn
+      } else {
+        // 正常切换到下一个玩家
+        nextPlayerIndex = gameOver ? currentPlayerIndex : (currentPlayerIndex + 1) % players.length
+      }
+      
+      // 清除定身术效果（如果使用了）
+      if (gameState.activeSpells?.fixedDice) {
+        delete newActiveSpells.fixedDice
+      }
       
       setGameState({
         ...gameState,
         players,
         currentPlayerIndex: nextPlayerIndex,
         gameOver,
-        winner
+        winner,
+        activeSpells: Object.keys(newActiveSpells).length > 0 ? newActiveSpells : undefined
       })
     }, 1000)
   }
