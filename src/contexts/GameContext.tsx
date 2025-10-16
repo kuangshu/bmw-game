@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react'
-import { Tile } from '../types/game'
+import { Tile } from '../entities/Tile'
 
 interface GameContextType {
   tiles: Tile[]
@@ -64,7 +64,7 @@ export const generateGameTiles = (): Tile[] => {
       }
     }
     
-    tiles.push({ position: i, type, bossRequirement })
+    tiles.push(new Tile(i, type, bossRequirement))
   }
   
   return tiles

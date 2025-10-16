@@ -20,7 +20,6 @@ export interface PlayerData {
   role: PlayerRole
   position: number
   cards: Card[]
-  energy: number
   direction: Direction
 }
 
@@ -31,7 +30,7 @@ export class Player {
   private _cards: Card[]
   private _direction: Direction
   private _role: PlayerRole
-
+  
   constructor(
     id: number,
     name: string,
@@ -53,7 +52,6 @@ export class Player {
   get name(): string { return this._name }
   get position(): number { return this._position }
   get cards(): Card[] { return [...this._cards] } // 返回副本避免直接修改
-  get energy(): number { return 0 } // _energy属性已删除，返回默认值
   get direction(): Direction { return this._direction }
   get role(): PlayerRole { return this._role }
 
@@ -111,7 +109,6 @@ export class Player {
       role: this._role,
       position: this._position,
       cards: [...this._cards],
-      energy: 0, // _energy属性已删除，返回默认值
       direction: this._direction
     }
   }

@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from "react";
 import * as THREE from "three";
-import { GameState } from "../types/game";
+import { GameState } from "../entities/Game";
 import { useGameContext } from "../contexts/GameContext";
 
 interface WebGLBoardProps {

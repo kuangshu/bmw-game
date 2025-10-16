@@ -1,4 +1,4 @@
-import { GameState } from '../types/game'
+import { GameState } from '../entities/Game'
 import WebGLBoard from './WebGLBoard'
 
 interface GameBoardProps {
