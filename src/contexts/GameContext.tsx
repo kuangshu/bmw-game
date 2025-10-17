@@ -1,9 +1,30 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react'
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { Tile } from '../entities/Tile'
+import { DiceResult } from '../entities/Game'
+import { Game } from '../entities/Game'
 
 interface GameContextType {
+  // 游戏核心状态（只保留gameInstance）
+  gameInstance: Game | null
+  setGameInstance: (gameInstance: Game | null) => void
+  
+  // 设备信息
+  orientation: 'portrait' | 'landscape'
+  isMobile: boolean
+  
+  // 骰子相关状态
+  diceResult: DiceResult | null
+  isRolling: boolean
+  setDiceResult: (result: DiceResult | null) => void
+  setIsRolling: (rolling: boolean) => void
+  
+  // 游戏操作
+  initializeGame: (playerCount: number) => void
+  restartGame: () => void
+  rollDice: () => void
+  
+  // 地图相关
   tiles: Tile[]
-  setTiles: (tiles: Tile[]) => void
   generateTiles: () => void
 }
 
@@ -75,16 +96,112 @@ interface GameProviderProps {
 }
 
 export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
+  // 游戏核心状态（只保留gameInstance）
+  const [gameInstance, setGameInstance] = useState<Game | null>(null)
+  
+  // 设备信息
+  const [orientation, setOrientation] = useState<'portrait' | 'landscape'>('portrait')
+  const [isMobile, setIsMobile] = useState(false)
+  
+  // 骰子相关状态
+  const [diceResult, setDiceResult] = useState<DiceResult | null>(null)
+  const [isRolling, setIsRolling] = useState(false)
+  
+  // 地图相关
   const [tiles, setTiles] = useState<Tile[]>([])
   
+  // 检测设备和屏幕方向
+  useEffect(() => {
+    const checkDeviceAndOrientation = () => {
+      const mobile = window.innerWidth <= 768
+      setIsMobile(mobile)
+      setOrientation(window.innerHeight > window.innerWidth ? 'portrait' : 'landscape')
+    }
+
+    checkDeviceAndOrientation()
+    window.addEventListener('resize', checkDeviceAndOrientation)
+    
+    return () => window.removeEventListener('resize', checkDeviceAndOrientation)
+  }, [])
+
+  // 初始化游戏
+  const initializeGame = (playerCount: number) => {
+    const game = new Game()
+    game.initialize(playerCount)
+    
+    setGameInstance(game)
+  }
+
+  // 重新开始游戏
+  const restartGame = () => {
+    setGameInstance(null)
+    setDiceResult(null)
+    setIsRolling(false)
+  }
+
+  // 掷骰子逻辑
+  const rollDice = () => {
+    if (isRolling || !gameInstance) return
+    
+    setIsRolling(true)
+    
+    setTimeout(() => {
+      // 生成骰子结果
+      const dice1 = Math.floor(Math.random() * 6) + 1
+      const dice2 = Math.floor(Math.random() * 6) + 1
+      const total = dice1 + dice2
+      
+      const result: DiceResult = {
+        dice1,
+        dice2,
+        total
+      }
+      
+      setDiceResult(result)
+      
+      try {
+        // 使用Game实例处理骰子结果
+        gameInstance.processDiceRoll(result)
+        
+        // 更新gameInstance以触发重新渲染
+        setGameInstance(gameInstance)
+      } catch (error) {
+        console.error('处理骰子结果时出错:', error)
+        alert('游戏处理出现错误')
+      }
+      
+      setIsRolling(false)
+    }, 1000)
+  }
+
+  // 生成地图
   const generateTiles = () => {
     const newTiles = generateGameTiles()
     setTiles(newTiles)
   }
 
   const value: GameContextType = {
+    // 游戏核心状态
+    gameInstance,
+    setGameInstance,
+    
+    // 设备信息
+    orientation,
+    isMobile,
+    
+    // 骰子相关状态
+    diceResult,
+    isRolling,
+    setDiceResult,
+    setIsRolling,
+    
+    // 游戏操作
+    initializeGame,
+    restartGame,
+    rollDice,
+    
+    // 地图相关
     tiles,
-    setTiles,
     generateTiles
   }
 

@@ -1,55 +1,26 @@
-import { useState, useEffect } from 'react'
 import GameBoard from './components/GameBoard'
 import DiceRoller from './components/DiceRoller'
 import PlayerHand from './components/PlayerHand'
-import { GameState } from './entities/Game'
-import { Game } from './entities/Game'
-
-const initialGameState: GameState = {
-  players: [],
-  currentPlayerIndex: 0,
-  gameStarted: false,
-  gameOver: false,
-  winner: null
-}
+import { useGameContext } from './contexts/GameContext'
 
 function AppContent() {
-  const [gameState, setGameState] = useState<GameState>(initialGameState)
-  const [orientation, setOrientation] = useState<'portrait' | 'landscape'>('portrait')
-  const [isMobile, setIsMobile] = useState(false)
-  const [gameInstance, setGameInstance] = useState<Game | null>(null)
-  // 检测设备和屏幕方向
-  useEffect(() => {
-    const checkDeviceAndOrientation = () => {
-      const mobile = window.innerWidth <= 768
-      setIsMobile(mobile)
-      setOrientation(window.innerHeight > window.innerWidth ? 'portrait' : 'landscape')
-    }
+  const {
+    gameInstance,
+    orientation,
+    isMobile,
+    initializeGame,
+    restartGame
+  } = useGameContext()
 
-    checkDeviceAndOrientation()
-    window.addEventListener('resize', checkDeviceAndOrientation)
-    
-    return () => window.removeEventListener('resize', checkDeviceAndOrientation)
-  }, [])
+  // 从gameInstance获取游戏状态
+  const gameState = gameInstance ? gameInstance.toJSON() : {
+    players: [],
+    currentPlayerIndex: 0,
+    gameStarted: false,
+    gameOver: false,
+    winner: null
+  }
 
-  // 创建完整的牌堆（60张牌：52张能量牌 + 8张法术牌）
-  // 初始化游戏
-  const initializeGame = (playerCount: number) => {
-    const game = new Game()
-    game.initialize(playerCount)
-    
-    setGameInstance(game)
-    setGameState(game.toJSON())
-  }
-  // 重新开始游戏
-  // 重新开始游戏
-  const restartGame = () => {
-    if (gameInstance) {
-      gameInstance.restart()
-    }
-    setGameState(initialGameState)
-    setGameInstance(null)
-  }
   if (!gameState.gameStarted) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-400 to-purple-600 p-4">
@@ -102,7 +73,7 @@ function AppContent() {
     <div className={`min-h-screen flex ${orientation === 'landscape' ? 'flex-row' : 'flex-col'}`}>
       {/* 游戏地图区域 */}
       <div className={`${orientation === 'landscape' ? 'w-3/4' : 'h-3/4'} relative`}>
-        <GameBoard gameState={gameState} orientation={orientation} />
+        <GameBoard />
       </div>
       
       {/* 控制面板区域 */}
@@ -122,22 +93,22 @@ function AppContent() {
             )}
           </div>
           
-          <DiceRoller 
-            gameState={gameState} 
-            gameInstance={gameInstance}
-            onGameUpdate={setGameState} 
-          />
-          <PlayerHand 
-            player={gameState.players[gameState.currentPlayerIndex]} 
-          />
+          <DiceRoller />
+          <PlayerHand />
         </div>
       </div>
     </div>
   )
 }
 
+import { GameProvider } from './contexts/GameContext'
+
 function App() {
-  return <AppContent />
+  return (
+    <GameProvider>
+      <AppContent />
+    </GameProvider>
+  )
 }
 
 export default App

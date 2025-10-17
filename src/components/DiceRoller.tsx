@@ -1,49 +1,21 @@
-import React, { useState } from 'react'
-import { GameState, DiceResult } from '../entities/Game'
-import { Game } from '../entities/Game'
+import React from 'react'
+import { useGameContext } from '../contexts/GameContext'
 
-interface DiceRollerProps {
-  gameState: GameState
-  gameInstance: Game | null
-  onGameUpdate: (gameState: GameState) => void
-}
+const DiceRoller: React.FC = () => {
+  const {
+    gameInstance,
+    diceResult,
+    isRolling,
+    rollDice
+  } = useGameContext()
 
-const DiceRoller: React.FC<DiceRollerProps> = ({ gameState, gameInstance, onGameUpdate }) => {
-  const [diceResult, setDiceResult] = useState<DiceResult | null>(null)
-  const [isRolling, setIsRolling] = useState(false)
-
-  const rollDice = () => {
-    if (isRolling || !gameInstance) return
-    
-    setIsRolling(true)
-    
-    setTimeout(() => {
-      // 生成骰子结果
-      const dice1 = Math.floor(Math.random() * 6) + 1
-      const dice2 = Math.floor(Math.random() * 6) + 1
-      const total = dice1 + dice2
-      
-      const result: DiceResult = {
-        dice1,
-        dice2,
-        total
-      }
-      
-      setDiceResult(result)
-      
-      try {
-        // 使用Game实例处理骰子结果
-        gameInstance.processDiceRoll(result)
-        
-        // 更新游戏状态
-        onGameUpdate(gameInstance.toJSON())
-      } catch (error) {
-        console.error('处理骰子结果时出错:', error)
-        alert('游戏处理出现错误')
-      }
-      
-      setIsRolling(false)
-    }, 1000)
+  // 从gameInstance获取游戏状态
+  const gameState = gameInstance ? gameInstance.toJSON() : {
+    players: [],
+    currentPlayerIndex: 0,
+    gameStarted: false,
+    gameOver: false,
+    winner: null
   }
 
   return (

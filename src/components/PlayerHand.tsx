@@ -1,11 +1,24 @@
 import React from 'react'
-import { PlayerData } from '../entities/Player'
+import { useGameContext } from '../contexts/GameContext'
 
-interface PlayerHandProps {
-  player: PlayerData
-}
+const PlayerHand: React.FC = () => {
+  const { gameInstance } = useGameContext()
+  
+  // 从gameInstance获取游戏状态
+  const gameState = gameInstance ? gameInstance.toJSON() : {
+    players: [],
+    currentPlayerIndex: 0,
+    gameStarted: false,
+    gameOver: false,
+    winner: null
+  }
+  
+  const player = gameState.players[gameState.currentPlayerIndex]
 
-const PlayerHand: React.FC<PlayerHandProps> = ({ player }) => {
+  if (!player) {
+    return null
+  }
+
   return (
     <div className="bg-white p-4 rounded-lg shadow-md">
       <h3 className="text-lg font-semibold mb-4">{player.name}的手牌</h3>
