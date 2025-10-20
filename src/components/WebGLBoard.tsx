@@ -1,15 +1,19 @@
 import React, { useRef, useEffect } from "react";
 import * as THREE from "three";
-import { GameState } from "../entities/Game";
 import { useGameContext } from "../contexts/GameContext";
 
-interface WebGLBoardProps {
-  gameState: GameState;
-}
-
-const WebGLBoard: React.FC<WebGLBoardProps> = ({ gameState }) => {
+const WebGLBoard: React.FC = () => {
   const mountRef = useRef<HTMLDivElement>(null);
-  const { tiles } = useGameContext();
+  const { tiles, gameInstance } = useGameContext();
+  
+  // 从gameInstance获取游戏状态
+  const gameState = gameInstance ? gameInstance.toJSON() : {
+    players: [],
+    currentPlayerIndex: 0,
+    gameStarted: false,
+    gameOver: false,
+    winner: null
+  };
 
   useEffect(() => {
     if (!mountRef.current) return;

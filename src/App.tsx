@@ -1,4 +1,4 @@
-import GameBoard from './components/GameBoard'
+import WebGLBoard from './components/WebGLBoard'
 import DiceRoller from './components/DiceRoller'
 import PlayerHand from './components/PlayerHand'
 import { useGameContext } from './contexts/GameContext'
@@ -73,7 +73,7 @@ function AppContent() {
     <div className={`min-h-screen flex ${orientation === 'landscape' ? 'flex-row' : 'flex-col'}`}>
       {/* 游戏地图区域 */}
       <div className={`${orientation === 'landscape' ? 'w-3/4' : 'h-3/4'} relative`}>
-        <GameBoard />
+        <WebGLBoard />
       </div>
       
       {/* 控制面板区域 */}

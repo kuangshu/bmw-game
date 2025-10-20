@@ -26,14 +26,39 @@ export class CardDeck {
     }
   }
 
-  // 从牌堆顶部抽取指定数量的卡片
+  // 从牌堆顶部抽取指定数量的卡片（如果牌堆不足，自动将弃牌堆洗回到主牌堆并继续抽牌）
   draw(count: number): Card[] {
-    if (count <= 0 || count > this._cards.length) {
-      throw new Error(`无法抽取 ${count} 张卡片，牌堆中只有 ${this._cards.length} 张`)
+    if (count <= 0) {
+      throw new Error(`无法抽取 ${count} 张卡片，数量必须大于0`)
     }
-
-    const drawnCards = this._cards.splice(0, count)
-    return drawnCards
+    let result: Card[] = []
+    let need = count
+    // 先尽量抽
+    if (this._cards.length >= need) {
+      return this._cards.splice(0, need)
+    }
+    // 不足，先把能抽的都抽掉
+    if (this._cards.length > 0) {
+      result = this._cards.splice(0, this._cards.length)
+      need = count - result.length
+    }
+    // 重新洗入弃牌堆
+    if (this._discardPile.length > 0) {
+      this.reshuffle()
+      // 此时如果还是不够就抽剩下所有
+      if (this._cards.length >= need) {
+        result = result.concat(this._cards.splice(0, need))
+        return result
+      } else if (this._cards.length > 0) {
+        result = result.concat(this._cards.splice(0, this._cards.length))
+        return result
+      }
+    }
+    // 到这里只能无牌可抽
+    if (result.length === 0) {
+      throw new Error(`无法抽取 ${count} 张卡片，牌堆和弃牌堆都已空`)
+    }
+    return result
   }
 
   // 将卡片添加到弃牌堆
@@ -64,10 +89,10 @@ export class CardDeck {
     
     // 能量卡配置
     const energyCardTypes = [
-      { name: '甜筒', value: 1, count: 20 },
-      { name: '薯条', value: 3, count: 16 },
-      { name: '芝士汉堡', value: 6, count: 10 },
-      { name: '咸蛋黄汉堡', value: 6, count: 6 }
+      { name: '甜品', value: 1, count: 14 },
+      { name: '薯条', value: 3, count: 10 },
+      { name: '芝士蛋双牛黑金月堡', value: 6, count: 4 },
+      { name: '咸蛋黄鸡腿蛋月堡', value: 6, count: 4 }
     ]
     
     // 生成能量卡（总共52张）
@@ -90,7 +115,7 @@ export class CardDeck {
         value: 3, 
         effect: 'fix_dice', 
         description: '指定下一次扔骰子的点数（消耗3能量）',
-        count: 2
+        count: 3
       },
       { 
         name: '分身术', 
@@ -104,14 +129,14 @@ export class CardDeck {
         value: 6, 
         effect: 'swap_position', 
         description: '指定一个玩家和其交换位置（消耗6能量）',
-        count: 2
+        count: 1
       },
       { 
         name: '铜墙铁壁', 
         value: 4, 
         effect: 'spell_shield', 
         description: '抵消其他人对玩家使用的法术效果（消耗4能量）',
-        count: 2
+        count: 3
       }
     ]
     
