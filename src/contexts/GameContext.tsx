@@ -22,10 +22,12 @@ interface GameContextType {
   initializeGame: (playerCount: number) => void
   restartGame: () => void
   rollDice: () => void
+  endTurn: () => void
   
   // 地图相关
   tiles: Tile[]
   generateTiles: () => void
+  activeSpellPending: { card: any | null, playerId: number | null, options?: any };
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined)
@@ -180,6 +182,13 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     setTiles(newTiles)
   }
 
+  const endTurn = () => {
+    if (gameInstance) {
+      gameInstance.nextTurn();
+      setGameInstance(gameInstance);
+    }
+  }
+
   const value: GameContextType = {
     // 游戏核心状态
     gameInstance,
@@ -199,10 +208,12 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     initializeGame,
     restartGame,
     rollDice,
+    endTurn,
     
     // 地图相关
     tiles,
-    generateTiles
+    generateTiles,
+    activeSpellPending: gameInstance ? gameInstance.activeSpellPending : { card: null, playerId: null },
   }
 
   return (

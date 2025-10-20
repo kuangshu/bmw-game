@@ -114,28 +114,28 @@ export class CardDeck {
         name: '定身术', 
         value: 3, 
         effect: 'fix_dice', 
-        description: '指定下一次扔骰子的点数（消耗3能量）',
+        description: '指定下一次扔骰子的点数',
         count: 3
       },
       { 
         name: '分身术', 
         value: 3, 
         effect: 'extra_turn', 
-        description: '多进行一次扔骰子的行为（消耗3能量）',
+        description: '多进行一次扔骰子的行为',
         count: 2
       },
       { 
         name: '聚形散气', 
         value: 6, 
         effect: 'swap_position', 
-        description: '指定一个玩家和其交换位置（消耗6能量）',
+        description: '指定一个玩家和其交换位置',
         count: 1
       },
       { 
         name: '铜墙铁壁', 
         value: 4, 
         effect: 'spell_shield', 
-        description: '抵消其他人对玩家使用的法术效果（消耗4能量）',
+        description: '抵消其他人对玩家使用的法术效果',
         count: 3
       }
     ]

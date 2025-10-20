@@ -125,3 +125,53 @@ export class Player {
     )
   }
 }
+
+// 3D 展示支持（需要 three.js & Render 类）
+import * as THREE from 'three';
+import type { Render } from '../components/Render';
+
+export class Player3D {
+  public mesh: THREE.Mesh;
+  public playerId: number;
+
+  constructor(playerData: PlayerData, color: number = 0xff0000) {
+    this.playerId = playerData.id;
+    this.mesh = this.createMarkerMesh(playerData, color);
+  }
+
+  createMarkerMesh(playerData: PlayerData, color: number) {
+    const gridSize = 9;
+    const tileSpacing = 2;
+    const geometry = new THREE.SphereGeometry(0.3);
+    const material = new THREE.MeshLambertMaterial({ color });
+    const row = Math.floor(playerData.position / gridSize);
+    const col = playerData.position % gridSize;
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.set(
+      (col - gridSize / 2) * tileSpacing,
+      0.5,
+      (row - gridSize / 2) * tileSpacing
+    );
+    return mesh;
+  }
+
+  updatePosition(position: number) {
+    const gridSize = 9;
+    const tileSpacing = 2;
+    const row = Math.floor(position / gridSize);
+    const col = position % gridSize;
+    this.mesh.position.set(
+      (col - gridSize / 2) * tileSpacing,
+      0.5,
+      (row - gridSize / 2) * tileSpacing
+    );
+  }
+
+  addToRender(render: Render) {
+    render.addObject(this.mesh);
+  }
+
+  removeFromRender(render: Render) {
+    render.removeObject(this.mesh);
+  }
+}

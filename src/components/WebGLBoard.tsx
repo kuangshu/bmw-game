@@ -1,11 +1,13 @@
 import React, { useRef, useEffect } from "react";
-import * as THREE from "three";
 import { useGameContext } from "../contexts/GameContext";
+import { Render } from "./Render";
+import { Tile3D } from "../entities/Tile";
+import { Player3D } from "../entities/Player";
 
 const WebGLBoard: React.FC = () => {
   const mountRef = useRef<HTMLDivElement>(null);
   const { tiles, gameInstance } = useGameContext();
-  
+
   // 从gameInstance获取游戏状态
   const gameState = gameInstance ? gameInstance.toJSON() : {
     players: [],
@@ -17,159 +19,56 @@ const WebGLBoard: React.FC = () => {
 
   useEffect(() => {
     if (!mountRef.current) return;
-
-    // 场景设置
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(
-      75,
-      window.innerWidth / window.innerHeight,
-      0.1,
-      1000
-    );
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-
-    renderer.setSize(
-      mountRef.current.clientWidth,
-      mountRef.current.clientHeight
-    );
-    renderer.setClearColor(0x87ceeb); // 天空蓝背景
-    mountRef.current.appendChild(renderer.domElement);
-
-    // 添加环境光
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-    scene.add(ambientLight);
-
-    // 添加方向光
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(10, 10, 5);
-    scene.add(directionalLight);
-
-    // 创建游戏地图网格
-    const gridSize = 9;
-    const tileSpacing = 2;
-
-    // 创建地面
-    const groundGeometry = new THREE.PlaneGeometry(
-      gridSize * tileSpacing + 2,
-      gridSize * tileSpacing + 2
-    );
-    const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x90ee90 });
-    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-    ground.rotation.x = -Math.PI / 2;
-    ground.position.y = -0.5;
-    scene.add(ground);
-
-    // 创建格子
-    const threeTiles: THREE.Mesh[] = [];
-    tiles.forEach((tileData, i) => {
-      const row = Math.floor(i / gridSize);
-      const col = i % gridSize;
-
-      const geometry = new THREE.BoxGeometry(1.5, 0.2, 1.5);
-      let material: THREE.Material;
-
-      // 根据格子类型设置颜色
-      switch (tileData.type) {
-        case 'boss':
-          material = new THREE.MeshLambertMaterial({ color: 0x800080 }); // BOSS格 - 紫色
-          break;
-        case 'treasure':
-          material = new THREE.MeshLambertMaterial({ color: 0xffd700 }); // 宝箱格 - 金色
-          break;
-        case 'reverse':
-          material = new THREE.MeshLambertMaterial({ color: 0xff4500 }); // 反转格 - 红色
-          break;
-        case 'supply':
-          material = new THREE.MeshLambertMaterial({ color: 0x32cd32 }); // 补给站格 - 绿色
-          break;
-        default:
-          material = new THREE.MeshLambertMaterial({ color: 0xd3d3d3 }); // 空白格 - 浅灰色
-      }
-
-      const tile = new THREE.Mesh(geometry, material);
-      tile.position.set(
-        (col - gridSize / 2) * tileSpacing,
-        0,
-        (row - gridSize / 2) * tileSpacing
+    const render = new Render(mountRef.current);
+    // 环境 & 方向光
+    import("three").then(THREE => {
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+      directionalLight.position.set(10, 10, 5);
+      render.addObject(ambientLight);
+      render.addObject(directionalLight);
+      // 地面
+      const gridSize = 9;
+      const tileSpacing = 2;
+      const groundGeometry = new THREE.PlaneGeometry(
+        gridSize * tileSpacing + 2,
+        gridSize * tileSpacing + 2
       );
-
-      scene.add(tile);
-      threeTiles.push(tile);
+      const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x90ee90 });
+      const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+      ground.rotation.x = -Math.PI / 2;
+      ground.position.y = -0.5;
+      render.addObject(ground);
     });
 
-    // 创建玩家标记（小球）
-    const playerMarkers: THREE.Mesh[] = [];
-    gameState.players.forEach((player, index) => {
-      const geometry = new THREE.SphereGeometry(0.3);
-      const material = new THREE.MeshLambertMaterial({
-        color: [0xff0000, 0x0000ff, 0x00ff00, 0xffff00, 0xff00ff, 0x00ffff][
-          index
-        ],
-      });
-      const marker = new THREE.Mesh(geometry, material);
+    // Tile3D 对象
+    const tileObjects: Tile3D[] = tiles.map(td => new Tile3D(td));
+    tileObjects.forEach(t3d => t3d.addToRender(render));
 
-      const row = Math.floor(player.position / gridSize);
-      const col = player.position % gridSize;
+    // Player3D 对象
+    const colorArr = [0xff0000, 0x0000ff, 0x00ff00, 0xffff00, 0xff00ff, 0x00ffff];
+    const playerObjects = gameState.players.map((pdata, i) => new Player3D(pdata, colorArr[i % colorArr.length]));
+    playerObjects.forEach(p3d => p3d.addToRender(render));
 
-      marker.position.set(
-        (col - gridSize / 2) * tileSpacing,
-        0.5,
-        (row - gridSize / 2) * tileSpacing
-      );
+    // 相机设置
+    render.setCameraPosition(0, 15, 15);
+    render.lookAt(0, 0, 0);
 
-      scene.add(marker);
-      playerMarkers.push(marker);
-    });
-
-    // 相机位置
-    camera.position.set(0, 15, 15);
-    camera.lookAt(0, 0, 0);
-
-    // 动画循环
-    const animate = () => {
-      requestAnimationFrame(animate);
-
-      // 更新玩家位置
+    // 动画帧内更新玩家位置
+    render.setOnRender(() => {
       gameState.players.forEach((player, index) => {
-        const row = Math.floor(player.position / gridSize);
-        const col = player.position % gridSize;
-
-        playerMarkers[index].position.set(
-          (col - gridSize / 2) * tileSpacing,
-          0.5,
-          (row - gridSize / 2) * tileSpacing
-        );
+        if (!playerObjects[index]) return;
+        playerObjects[index].updatePosition(player.position);
       });
+    });
+    render.render();
 
-      renderer.render(scene, camera);
-    };
-
-    animate();
-
-    // 窗口大小调整处理
-    const handleResize = () => {
-      if (!mountRef.current) return;
-
-      camera.aspect =
-        mountRef.current.clientWidth / mountRef.current.clientHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(
-        mountRef.current.clientWidth,
-        mountRef.current.clientHeight
-      );
-    };
-
-    window.addEventListener("resize", handleResize);
-
-    // 清理函数
     return () => {
-      window.removeEventListener("resize", handleResize);
-      if (mountRef.current) {
-        mountRef.current.removeChild(renderer.domElement);
-      }
-      renderer.dispose();
+      tileObjects.forEach(t3d => t3d.removeFromRender(render));
+      playerObjects.forEach(p3d => p3d.removeFromRender(render));
+      render.dispose();
     };
-    }, [gameState, tiles]);
+  }, [gameState, tiles]);
 
   return (
     <div

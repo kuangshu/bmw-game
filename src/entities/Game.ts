@@ -49,6 +49,17 @@ export class Game {
   private _cardDeck: CardDeck;
   private _gameBoard: GameBoard;
   private _bossBattleState: BossBattleState | null = null;
+  private _activeSpells: {
+    fixedDice?: number;
+    extraTurn?: boolean;
+    swapTarget?: number;
+    spellShield?: number;
+  } = {};
+  private _activeSpellPending: {
+    card: any | null,
+    playerId: number | null,
+    options?: any
+  } = { card: null, playerId: null };
 
   constructor() {
     this._players = [];
@@ -84,6 +95,9 @@ export class Game {
   }
   get bossBattleState(): BossBattleState | null {
     return this._bossBattleState;
+  }
+  get activeSpellPending() {
+    return this._activeSpellPending;
   }
 
   // 初始化游戏
@@ -396,5 +410,60 @@ export class Game {
     }
 
     return game;
+  }
+
+  // 激活法术卡，等待玩家参数或直接执行
+  activateSpellCard(player: Player, cardId: number): boolean {
+    const card = player.getCard(cardId);
+    if (!card || card.type !== 'spell') return false;
+    // 判断是否需要参数
+    if (
+      card.effect === 'fix_dice' ||
+      card.effect === 'swap_position'
+    ) {
+      // 等待后续 UI 提供参数
+      this._activeSpellPending = { card, playerId: player.id, options: {} };
+      return true;
+    }
+    // 如无需参数可直接调用 playSpellCard
+    return this.playSpellCard(player, cardId, {});
+  }
+
+  // 使用法术卡，执行具体效果（如被动型可直接用此; 需参数的由 UI 收集参数后再回调此函数）
+  playSpellCard(player: Player, cardId: number, options?: any): boolean {
+    const card = player.getCard(cardId);
+    if (!card || card.type !== 'spell') return false;
+    // 每次执行时清空激活态
+    this._activeSpellPending = { card: null, playerId: null };
+    switch (card.effect) {
+      case 'fix_dice': {
+        if (!options || typeof options.fixedValue !== 'number') return false;
+        this._activeSpells.fixedDice = options.fixedValue;
+        player.removeCard(cardId);
+        return true;
+      }
+      case 'extra_turn': {
+        this._activeSpells.extraTurn = true;
+        player.removeCard(cardId);
+        return true;
+      }
+      case 'swap_position': {
+        if (!options || typeof options.targetPlayerId !== 'number') return false;
+        const target = this._players.find(p => p.id === options.targetPlayerId);
+        if (!target) return false;
+        const tmp = player.position;
+        player.position = target.position;
+        target.position = tmp;
+        player.removeCard(cardId);
+        return true;
+      }
+      case 'spell_shield': {
+        this._activeSpells.spellShield = player.id;
+        player.removeCard(cardId);
+        return true;
+      }
+      default:
+        return false;
+    }
   }
 }

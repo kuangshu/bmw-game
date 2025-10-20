@@ -67,3 +67,57 @@ export class Tile implements TileData {
     return new Tile(data.position, data.type, data.bossRequirement)
   }
 }
+
+// 3D 展示支持（需要 three.js & Render 类）
+import * as THREE from 'three';
+import type { Render } from '../components/Render';
+
+export class Tile3D {
+  public mesh: THREE.Mesh;
+  public tileData: TileData;
+
+  constructor(tileData: TileData) {
+    this.tileData = tileData;
+    this.mesh = this.createMesh();
+  }
+
+  createMesh() {
+    const gridSize = 9;
+    const tileSpacing = 2;
+    const geometry = new THREE.BoxGeometry(1.5, 0.2, 1.5);
+    let material: THREE.Material;
+    switch (this.tileData.type) {
+      case 'boss':
+        material = new THREE.MeshLambertMaterial({ color: 0x800080 });
+        break;
+      case 'treasure':
+        material = new THREE.MeshLambertMaterial({ color: 0xffd700 });
+        break;
+      case 'reverse':
+        material = new THREE.MeshLambertMaterial({ color: 0xff4500 });
+        break;
+      case 'supply':
+        material = new THREE.MeshLambertMaterial({ color: 0x32cd32 });
+        break;
+      default:
+        material = new THREE.MeshLambertMaterial({ color: 0xd3d3d3 });
+    }
+    const mesh = new THREE.Mesh(geometry, material);
+    const row = Math.floor(this.tileData.position / gridSize);
+    const col = this.tileData.position % gridSize;
+    mesh.position.set(
+      (col - gridSize / 2) * tileSpacing,
+      0,
+      (row - gridSize / 2) * tileSpacing
+    );
+    return mesh;
+  }
+
+  addToRender(render: Render) {
+    render.addObject(this.mesh);
+  }
+
+  removeFromRender(render: Render) {
+    render.removeObject(this.mesh);
+  }
+}

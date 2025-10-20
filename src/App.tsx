@@ -1,34 +1,36 @@
-import WebGLBoard from './components/WebGLBoard'
-import DiceRoller from './components/DiceRoller'
-import PlayerHand from './components/PlayerHand'
-import { useGameContext } from './contexts/GameContext'
+import WebGLBoard from "./components/WebGLBoard";
+import DiceRoller from "./components/DiceRoller";
+import PlayerHand from "./components/PlayerHand";
+import { useGameContext } from "./contexts/GameContext";
+import SpellActionLayer from "./components/SpellActionLayer";
 
 function AppContent() {
-  const {
-    gameInstance,
-    orientation,
-    isMobile,
-    initializeGame,
-    restartGame
-  } = useGameContext()
+  const { gameInstance, orientation, isMobile, initializeGame, restartGame } =
+    useGameContext();
 
   // 从gameInstance获取游戏状态
-  const gameState = gameInstance ? gameInstance.toJSON() : {
-    players: [],
-    currentPlayerIndex: 0,
-    gameStarted: false,
-    gameOver: false,
-    winner: null
-  }
+  const gameState = gameInstance
+    ? gameInstance.toJSON()
+    : {
+        players: [],
+        currentPlayerIndex: 0,
+        gameStarted: false,
+        gameOver: false,
+        winner: null,
+      };
 
   if (!gameState.gameStarted) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-400 to-purple-600 p-4">
         <div className="bg-white p-6 md:p-8 rounded-lg shadow-xl text-center max-w-md w-full">
-          <h1 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6 text-gray-800">骰子闯关游戏</h1>
-          <p className="mb-4 md:mb-6 text-gray-600 text-sm md:text-base">选择玩家数量开始游戏</p>
+          <h1 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6 text-gray-800">
+            骰子闯关游戏
+          </h1>
+          <p className="mb-4 md:mb-6 text-gray-600 text-sm md:text-base">
+            选择玩家数量开始游戏
+          </p>
           <div className="space-y-3 md:space-y-4">
-            {[2, 3, 4, 5, 6].map(count => (
+            {[2, 3, 4, 5, 6].map((count) => (
               <button
                 key={count}
                 onClick={() => initializeGame(count)}
@@ -45,7 +47,7 @@ function AppContent() {
           )}
         </div>
       </div>
-    )
+    );
   }
 
   // 游戏结束界面
@@ -53,9 +55,13 @@ function AppContent() {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-green-400 to-blue-500 p-4">
         <div className="bg-white p-6 md:p-8 rounded-lg shadow-xl text-center max-w-md w-full">
-          <h1 className="text-2xl md:text-3xl font-bold mb-4 text-green-600">🎉 游戏结束！</h1>
+          <h1 className="text-2xl md:text-3xl font-bold mb-4 text-green-600">
+            🎉 游戏结束！
+          </h1>
           <div className="mb-6">
-            <div className="text-xl font-semibold text-gray-800">获胜者：{gameState.winner.name}</div>
+            <div className="text-xl font-semibold text-gray-800">
+              获胜者：{gameState.winner.name}
+            </div>
             <div className="text-gray-600 mt-2">恭喜获得胜利！</div>
           </div>
           <button
@@ -66,18 +72,23 @@ function AppContent() {
           </button>
         </div>
       </div>
-    )
+    );
   }
 
   return (
-    <div className={`min-h-screen flex ${orientation === 'landscape' ? 'flex-row' : 'flex-col'}`}>
+    <div
+      className={`min-h-screen flex ${orientation === "landscape" ? "flex-row" : "flex-col"}`}
+    >
       {/* 游戏地图区域 */}
-      <div className={`${orientation === 'landscape' ? 'w-3/4' : 'h-3/4'} relative`}>
+      <div
+        className={`${orientation === "landscape" ? "w-3/4" : "h-3/4"} relative`}
+      >
         <WebGLBoard />
       </div>
-      
       {/* 控制面板区域 */}
-      <div className={`${orientation === 'landscape' ? 'w-1/4' : 'h-1/4'} bg-gray-50 border-t border-l border-gray-200 overflow-auto`}>
+      <div
+        className={`${orientation === "landscape" ? "w-1/4" : "h-1/4"} bg-gray-50 border-t border-l border-gray-200 overflow-auto`}
+      >
         <div className="p-2 md:p-4 space-y-3 md:space-y-4">
           <div className="flex justify-between items-center">
             <button
@@ -88,27 +99,28 @@ function AppContent() {
             </button>
             {isMobile && (
               <div className="text-xs text-gray-500">
-                {orientation === 'portrait' ? '竖屏' : '横屏'}
+                {orientation === "portrait" ? "竖屏" : "横屏"}
               </div>
             )}
           </div>
-          
           <DiceRoller />
           <PlayerHand />
         </div>
       </div>
+      {/* 法术遮罩（条件渲染，后续补实现） */}
+      <SpellActionLayer />
     </div>
-  )
+  );
 }
 
-import { GameProvider } from './contexts/GameContext'
+import { GameProvider } from "./contexts/GameContext";
 
 function App() {
   return (
     <GameProvider>
       <AppContent />
     </GameProvider>
-  )
+  );
 }
 
-export default App
+export default App;
