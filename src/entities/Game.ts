@@ -11,12 +11,6 @@ export interface GameState {
   gameStarted: boolean;
   gameOver: boolean;
   winner: PlayerData | null;
-  bossBattle?: {
-    position: number;
-    requirement: number;
-    originalPosition: number;
-    remainingSteps: number;
-  };
   activeSpells?: {
     fixedDice?: number;
     extraTurn?: boolean;
@@ -32,15 +26,6 @@ export interface DiceResult {
   total: number;
 }
 
-// BOSS战斗状态接口
-interface BossBattleState {
-  position: number; // BOSS位置
-  requirement: number; // 所需能量
-  originalPosition: number; // 玩家原始位置
-  remainingSteps: number; // 剩余步数
-  selectedCards: number[]; // 已选择的卡片ID
-}
-
 export class Game {
   private _players: Player[];
   private _currentPlayerIndex: number;
@@ -49,7 +34,6 @@ export class Game {
   private _winner: Player | null;
   private _cardDeck: CardDeck;
   private _gameBoard: GameBoard;
-  private _bossBattleState: BossBattleState | null = null;
   private _activeSpells: {
     fixedDice?: number;
     extraTurn?: boolean;
@@ -61,6 +45,35 @@ export class Game {
     playerId: number | null;
     options?: any;
   } = { card: null, playerId: null };
+  
+  // 骰子投掷次数跟踪，每个玩家每回合的投掷次数
+  private _diceRollCount: Map<number, number> = new Map();
+  
+  // 获取当前玩家的骰子投掷次数
+  getDiceRollCount(): number {
+    const playerId = this.getCurrentPlayer().id;
+    return this._diceRollCount.get(playerId) || 0;
+  }
+  
+  // 增加当前玩家的骰子投掷次数
+  incrementDiceRollCount(): void {
+    const playerId = this.getCurrentPlayer().id;
+    const currentCount = this._diceRollCount.get(playerId) || 0;
+    this._diceRollCount.set(playerId, currentCount + 1);
+  }
+  
+  // 重置当前玩家的骰子投掷次数
+  resetDiceRollCount(): void {
+    const playerId = this.getCurrentPlayer().id;
+    this._diceRollCount.set(playerId, 0);
+  }
+  
+  // 增加当前玩家的骰子投掷次数（用于额外回合法术）
+  addDiceRollCount(additionalRolls: number = 1): void {
+    const playerId = this.getCurrentPlayer().id;
+    const currentCount = this._diceRollCount.get(playerId) || 0;
+    this._diceRollCount.set(playerId, currentCount + additionalRolls);
+  }
   
   // 事件系统
   private _eventSystem: GameEventSystem;
@@ -102,9 +115,6 @@ export class Game {
   }
   get gameBoard(): GameBoard {
     return this._gameBoard;
-  }
-  get bossBattleState(): BossBattleState | null {
-    return this._bossBattleState;
   }
   get activeSpellPending() {
     return this._activeSpellPending;
@@ -208,159 +218,33 @@ export class Game {
     }
   }
 
-  // 供 UI 挂钩，等待异步格子内玩家操作，返回Promise<void>，实际UI可调用resolve
-  public waitForPlayerChoice(_tile: BaseTile): Promise<void> {
-    // 这里简单实现一个挂起等待的Promise，UI拿到resolve之后实际推进
-    return new Promise((_resolve) => {
-      // 可存在一个队列或pending标记留给UI
-      // 如 this._pendingChoiceResolve = resolve
-    });
-  }
+
 
   public addMoveSteps(count: number): void {
     this._moveSteps.push(count);
   }
 
-  // 切换到下一个回合
-  // 处理BOSS战斗
-  // 处理BOSS战斗
-  private handleBossBattle(
-    _player: Player,
-    _tile: BaseTile,
-    _diceTotal: number
-  ): void {}
 
-  // 启动基于卡片的BOSS战斗
-  private startCardBasedBossBattle(
-    player: Player,
-    tile: BaseTile,
-    diceTotal: number
-  ): void {
-    // 设置BOSS战斗状态，等待玩家选择卡片
-    this._bossBattleState = {
-      position: tile.position,
-      requirement: tile.bossRequirement!,
-      originalPosition: player.position,
-      remainingSteps: diceTotal,
-      selectedCards: [],
-    };
-
-    console.log(
-      `⚔️ ${player.name} 进入BOSS战斗！需要 ${tile.bossRequirement} 点能量`
-    );
-    console.log(`请选择要使用的卡片组合，或者弃掉一张卡片回到上一关BOSS位置`);
-  }
-
-  // 处理玩家出牌
-  playCardsForBossBattle(player: Player, cardIds: number[]): boolean {
-    if (!this._bossBattleState) return false;
-
-    const totalEnergy = this.calculateCardsEnergy(player, cardIds);
-
-    if (totalEnergy >= this._bossBattleState.requirement) {
-      // 成功击败BOSS
-      this.removeSelectedCards(player, cardIds);
-      console.log(`🎉 ${player.name} 使用卡片击败BOSS！总能量：${totalEnergy}`);
-      this.endBossBattle(true);
-      return true;
-    } else {
-      console.log(
-        `❌ ${player.name} 卡片能量不足！总能量：${totalEnergy}，需要：${this._bossBattleState.requirement}`
-      );
-      return false;
-    }
-  }
-
-  // 处理玩家弃牌回退
-  discardCardAndRetreat(player: Player, cardId: number): boolean {
-    if (!this._bossBattleState) return false;
-
-    // 移除选择的卡片
-    const success = player.removeCard(cardId);
-    if (success) {
-      // 找到上一个BOSS位置或起点
-      const previousBossPosition = this.findPreviousBossPosition(
-        this._bossBattleState.position
-      );
-
-      // 计算剩余步数
-      const stepsTaken = this._bossBattleState.position - previousBossPosition;
-      const remainingSteps = this._bossBattleState.remainingSteps - stepsTaken;
-
-      // 将玩家移回上一个BOSS位置
-      player.position = previousBossPosition;
-
-      // 继续移动剩余步数
-      if (remainingSteps > 0) {
-        player.move(remainingSteps);
-      }
-
-      console.log(
-        `💨 ${player.name} 弃牌撤退，回到位置${previousBossPosition}`
-      );
-      this.endBossBattle(false);
-      return true;
-    }
-
-    return false;
-  }
-
-  // 计算所选卡片的能量总和
-  private calculateCardsEnergy(player: Player, cardIds: number[]): number {
-    let totalEnergy = 0;
-
-    for (const cardId of cardIds) {
-      const card = player.getCard(cardId);
-      if (card && card.type === "energy") {
-        totalEnergy += card.value;
-      }
-    }
-
-    return totalEnergy;
-  }
-
-  // 移除玩家选择的卡片
-  private removeSelectedCards(player: Player, cardIds: number[]): void {
-    for (const cardId of cardIds) {
-      player.removeCard(cardId);
-    }
-  }
-
-  // 结束BOSS战斗
-  private endBossBattle(success: boolean): void {
-    this._bossBattleState = null;
-
-    if (success) {
-      // BOSS战斗成功，继续游戏
-    }
-    // 失败的情况已经在discardCardAndRetreat中处理了移动逻辑
-  }
-
-  // 找到上一个BOSS位置
-  private findPreviousBossPosition(currentPosition: number): number {
-    const bossPositions = this._gameBoard.tiles
-      .filter((tile) => tile.type === "boss")
-      .map((tile) => tile.position)
-      .sort((a, b) => a - b);
-
-    // 找到当前BOSS之前的所有BOSS位置
-    const previousBosses = bossPositions.filter((pos) => pos < currentPosition);
-
-    // 返回最后一个BOSS位置，如果没有则返回起点(0)
-    return previousBosses.length > 0
-      ? previousBosses[previousBosses.length - 1]
-      : 0;
-  }
 
   // 切换到下一个回合
   nextTurn(): void {
-    this._currentPlayerIndex =
+    // 重置当前玩家的骰子投掷次数
+    this.resetDiceRollCount();
+    // 清除当前回合的额外回合状态
+    this._activeSpells.extraTurn = false;
+    // 切换到下一个玩家
+    this._currentPlayerIndex = 
       (this._currentPlayerIndex + 1) % this._players.length;
   }
   // 结束游戏
-  private endGame(winner: Player): void {
+  endGame(winner: Player): void {
     this._gameOver = true;
     this._winner = winner;
+    // 通过事件系统通知游戏结束
+    this.eventSystem.publishEvent({
+      type: 'GAME_OVER',
+      playerId: winner.id
+    });
   }
 
   // 重新开始游戏
@@ -372,7 +256,6 @@ export class Game {
     this._winner = null;
     this._cardDeck = new CardDeck();
     this._gameBoard = new GameBoard();
-    this._bossBattleState = null;
   }
 
   // 序列化方法（用于React状态管理）
@@ -383,20 +266,12 @@ export class Game {
       gameStarted: this._gameStarted,
       gameOver: this._gameOver,
       winner: this._winner ? this._winner.toJSON() : null,
-      bossBattle: this._bossBattleState
-        ? {
-            position: this._bossBattleState.position,
-            requirement: this._bossBattleState.requirement,
-            originalPosition: this._bossBattleState.originalPosition,
-            remainingSteps: this._bossBattleState.remainingSteps,
-          }
-        : undefined,
+      // BOSS战斗状态已移至事件系统处理
     };
   }
 
   // 处理骰子结果
   processDiceRoll(result: DiceResult): void {
-    const player = this.getCurrentPlayer();
     const steps = result.total;
     
     // 检查是否有固定骰子法术激活
@@ -422,17 +297,6 @@ export class Game {
       game._gameStarted = data.gameStarted;
       game._gameOver = data.gameOver;
       game._winner = data.winner ? Player.fromData(data.winner) : null;
-
-      // 恢复BOSS战斗状态
-      if (data.bossBattle) {
-        game._bossBattleState = {
-          position: data.bossBattle.position,
-          requirement: data.bossBattle.requirement,
-          originalPosition: data.bossBattle.originalPosition,
-          remainingSteps: data.bossBattle.remainingSteps,
-          selectedCards: [],
-        };
-      }
     }
 
     return game;
@@ -467,7 +331,8 @@ export class Game {
         return true;
       }
       case "extra_turn": {
-        this._activeSpells.extraTurn = true;
+        // 允许玩家在当前回合多扔一次骰子
+        this.addDiceRollCount();
         player.removeCard(cardId);
         return true;
       }
@@ -494,3 +359,8 @@ export class Game {
     }
   }
 }
+
+
+
+
+

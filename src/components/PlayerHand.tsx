@@ -14,14 +14,13 @@ const PlayerHand: React.FC = () => {
     winner: null,
     bossBattle: null,
   }
-  const bossBattle = gameState.bossBattle
   const player = gameState.players[gameState.currentPlayerIndex]
   if (!player) return null
 
   // 判断可否选中
   const canSelect = (card: any) => {
     if (card.type === 'spell') return true
-    if (card.type === 'energy' && bossBattle) return true
+    if (card.type === 'energy') return true
     return false
   }
 

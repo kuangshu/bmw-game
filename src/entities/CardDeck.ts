@@ -1,4 +1,4 @@
-import { Card } from './Player'
+import { Card, CardEffectType } from './Player'
 
 export class CardDeck {
   private _cards: Card[]
@@ -148,7 +148,7 @@ export class CardDeck {
           type: 'spell',
           value: cardType.value,
           name: cardType.name,
-          effect: cardType.effect,
+          effect: cardType.effect as CardEffectType,
           description: cardType.description
         })
       }

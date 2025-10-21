@@ -1,4 +1,4 @@
-import { BaseTile, EmptyTile, TreasureTile, SupplyTile, ReverseTile, BossTile, TileData, TileType } from './Tile'
+import { BaseTile, EmptyTile, TreasureTile, SupplyTile, ReverseTile, BossTile, TileData } from './Tile'
 
 export class GameBoard {
   private _tiles: BaseTile[]

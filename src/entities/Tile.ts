@@ -157,11 +157,125 @@ export class BossTile extends BaseTile {
   constructor(position: number, bossRequirement?: number) {
     super(position, "boss", bossRequirement);
   }
+  
   async onPass(game: Game, player: Player): Promise<void> {
-    await game.waitForPlayerChoice(this);
+    await this.handleBossBattle(game, player, 0);
   }
+  
   async onStay(game: Game, player: Player): Promise<void> {
-    await game.waitForPlayerChoice(this);
+    await this.handleBossBattle(game, player, 0);
+  }
+  
+  private async handleBossBattle(
+    game: Game,
+    player: Player,
+    diceTotal: number
+  ): Promise<void> {
+    if (!this.bossRequirement) return;
+
+    const bossBattleData = {
+      position: this.position,
+      requirement: this.bossRequirement || 0,
+      originalPosition: player.position,
+      remainingSteps: diceTotal
+    };
+
+    console.log(`⚔️ ${player.name} 进入BOSS战斗！需要 ${this.bossRequirement} 点能量`);
+
+    // 触发BOSS战斗开始事件
+    const startResult = await game.eventSystem.waitForPlayerChoice<{ ready: boolean }>({
+      type: 'BOSS_BATTLE_START',
+      playerId: player.id,
+      bossBattleData
+    });
+
+    if (startResult.ready) {
+      // 触发BOSS战斗出牌事件
+      const playResult = await game.eventSystem.waitForPlayerChoice<{ playCards?: boolean; discard?: boolean; cardIds?: number[] }>({
+        type: 'BOSS_BATTLE_PLAY_CARDS',
+        playerId: player.id,
+        bossBattleData
+      });
+
+      if (playResult.playCards && playResult.cardIds) {
+        // 计算选中卡片的总能量
+        let totalEnergy = 0;
+        for (const cardId of playResult.cardIds) {
+          const card = player.getCard(cardId);
+          if (card && card.type === "energy") {
+            totalEnergy += card.value;
+          }
+        }
+
+        if (totalEnergy >= this.bossRequirement) {
+          // 成功击败BOSS，移除选中的卡片
+          for (const cardId of playResult.cardIds) {
+            player.removeCard(cardId);
+          }
+          console.log(`🎉 ${player.name} 使用卡片击败BOSS！总能量：${totalEnergy}`);
+        } else {
+          console.log(`❌ ${player.name} 卡片能量不足！总能量：${totalEnergy}，需要：${this.bossRequirement}`);
+          // 能量不足，继续弃牌撤退流程
+          await this.handleBossRetreat(game, player, bossBattleData);
+        }
+      } else if (playResult.discard) {
+        // 触发弃牌撤退事件
+        await this.handleBossRetreat(game, player, bossBattleData);
+      }
+    }
+  }
+
+  // 处理BOSS战斗撤退
+  private async handleBossRetreat(
+    game: Game,
+    player: Player,
+    bossBattleData: { position: number; requirement: number; originalPosition: number; remainingSteps: number }
+  ): Promise<void> {
+    // 触发弃牌撤退事件
+    const discardResult = await game.eventSystem.waitForPlayerChoice<{ cardId: number }>({
+      type: 'BOSS_BATTLE_DISCARD',
+      playerId: player.id,
+      bossBattleData
+    });
+
+    if (discardResult.cardId) {
+      // 移除选择的卡片
+      const success = player.removeCard(discardResult.cardId);
+      if (success) {
+        // 找到上一个BOSS位置或起点
+        const previousBossPosition = this.findPreviousBossPosition(game, bossBattleData.position);
+
+        // 计算剩余步数
+        const stepsTaken = bossBattleData.position - previousBossPosition;
+        const remainingSteps = bossBattleData.remainingSteps - stepsTaken;
+
+        // 将玩家移回上一个BOSS位置
+        player.position = previousBossPosition;
+
+        // 继续移动剩余步数
+        if (remainingSteps > 0) {
+          player.move(remainingSteps);
+        }
+
+        console.log(`💨 ${player.name} 弃牌撤退，回到位置${previousBossPosition}`);
+      }
+    }
+  }
+
+  // 找到上一个BOSS位置
+  private findPreviousBossPosition(game: Game, currentPosition: number): number {
+    const bossPositions = game.gameBoard.tiles
+      .filter((tile: BaseTile) => tile.type === "boss")
+      .map((tile: BaseTile) => tile.position)
+      .sort((a: number, b: number) => a - b);
+
+    // 找到当前BOSS之前的所有BOSS位置
+    const previousBosses = bossPositions.filter((pos: number) => pos < currentPosition);
+
+    // 返回最后一个BOSS位置，如果没有则返回起点(0)
+    return previousBosses.length > 0
+      ? previousBosses[previousBosses.length - 1]
+      : 0;
   }
 }
 
@@ -174,15 +288,20 @@ export class TeleportTile extends BaseTile {
   }
 
   async onStay(game: Game, player: Player): Promise<void> {
-    const currentPos = this.position;
-    // 从当前位置向前搜寻下一个空白格子位置（不包括自己）
+    // 传送逻辑：跳转到下一个传送门
+    let currentPos = this.position;
+    // 寻找下一个传送门
     for (let i = currentPos + 1; i < game.gameBoard.totalTiles; i++) {
       const tile = game.gameBoard.getTile(i);
-      if (tile && tile.type === "empty") {
-        player.position = i;
-        break;
+      if (tile && tile.type === "teleport") {
+        player.position = tile.position;
+        console.log(`✨ ${player.name} 传送至位置 ${tile.position}`);
+        return;
       }
     }
+    // 如果没找到，传送到终点
+    player.position = game.gameBoard.totalTiles - 1;
+    console.log(`✨ ${player.name} 传送至终点 ${game.gameBoard.totalTiles - 1}`);
   }
 }
 
@@ -245,3 +364,10 @@ export interface RoleTileHandler {
   onPass?: (game: Game, player: Player, tile: BaseTile) => Promise<void> | void;
   onStay?: (game: Game, player: Player, tile: BaseTile) => Promise<void> | void;
 }
+
+
+
+
+
+
+

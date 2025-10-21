@@ -6,7 +6,9 @@ const DiceRoller: React.FC = () => {
     gameInstance,
     diceResult,
     isRolling,
-    rollDice
+    rollDice,
+    canRollDice,
+    getDiceRollCount
   } = useGameContext()
 
   // 从gameInstance获取游戏状态
@@ -39,11 +41,15 @@ const DiceRoller: React.FC = () => {
       
       <button
         onClick={rollDice}
-        disabled={isRolling || gameState.gameOver}
+        disabled={isRolling || gameState.gameOver || !canRollDice()}
         className="w-full bg-green-500 hover:bg-green-600 disabled:bg-gray-400 text-white py-2 px-3 md:py-2 md:px-4 rounded-lg transition-colors text-sm md:text-base"
       >
-        {isRolling ? '掷骰子中...' : gameState.gameOver ? '游戏结束' : '掷骰子'}
+        {isRolling ? '掷骰子中...' : gameState.gameOver ? '游戏结束' : !canRollDice() ? '已用完掷骰子次数' : '掷骰子'}
       </button>
+      
+      <div className="mt-2 text-xs text-gray-600">
+        本回合已掷骰子: {getDiceRollCount()} 次
+      </div>
       
       <div className="mt-3 text-xs text-gray-500">
         当前玩家: {gameState.players[gameState.currentPlayerIndex]?.name}

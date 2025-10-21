@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from 'react';
 import { useGameContext } from "../contexts/GameContext";
-import type { GameEventData } from "../entities/GameEventSystem";
+import type { GameEventData, GameEventType } from "../entities/GameEventSystem";
+import type { Card } from "../entities";
 
 // 法术卡事件组件
 const SpellFixDiceEvent: React.FC<{ eventData: GameEventData; onComplete: (result: any) => void }> = ({ onComplete }) => {
@@ -97,8 +98,8 @@ const SpellExtraTurnEvent: React.FC<{ eventData: GameEventData; onComplete: (res
 
   return (
     <div className="bg-white rounded-lg p-4 min-w-[290px] flex flex-col items-center">
-      <h2 className="font-bold text-lg mb-4">额外回合</h2>
-      <p className="mb-4">使用额外回合法术卡</p>
+      <h2 className="font-bold text-lg mb-4">额外投掷</h2>
+      <p className="mb-4">使用法术卡，在当前回合获得额外一次骰子投掷机会</p>
       <button
         className="bg-blue-500 hover:bg-blue-600 text-white rounded px-4 py-2"
         onClick={handleSubmit}
@@ -128,17 +129,138 @@ const SpellShieldEvent: React.FC<{ eventData: GameEventData; onComplete: (result
   );
 };
 
-// BOSS战斗事件组件
-const BossBattleStartEvent: React.FC<{ eventData: GameEventData; onComplete: (result: any) => void }> = ({ onComplete }) => {
+// BOSS战斗开始事件组件
+const BossBattleStartEvent: React.FC<{ eventData: GameEventData; onComplete: (result: any) => void }> = ({ eventData, onComplete }) => {
+  const { bossBattleData } = eventData || {};
+  const { requirement = 0 } = bossBattleData || {};
+  
   return (
     <div className="bg-white rounded-lg p-4 min-w-[290px] flex flex-col items-center">
       <h2 className="font-bold text-lg mb-4">BOSS战斗开始</h2>
-      <p className="mb-4">准备进入BOSS战斗</p>
+      <p className="mb-4">需要收集 {requirement} 点能量才能击败BOSS！</p>
       <button
         className="bg-blue-500 hover:bg-blue-600 text-white rounded px-4 py-2"
         onClick={() => onComplete({ ready: true })}
       >
         开始战斗
+      </button>
+    </div>
+  );
+};
+
+// BOSS战斗出牌事件组件
+const BossBattlePlayCardsEvent: React.FC<{ eventData: GameEventData; onComplete: (result: any) => void }> = ({ eventData, onComplete }) => {
+  const { gameInstance } = useGameContext();
+  const [selectedCards, setSelectedCards] = useState<number[]>([]);
+  const player = gameInstance?.getCurrentPlayer();
+  const { bossBattleData } = eventData || {};
+  const { requirement = 0 } = bossBattleData || {};
+  
+  const handleCardSelect = (cardId: number) => {
+    setSelectedCards(prev => 
+      prev.includes(cardId) 
+        ? prev.filter(id => id !== cardId) 
+        : [...prev, cardId]
+    );
+  };
+  
+  const handlePlayCards = () => {
+    onComplete({ playCards: true, cardIds: selectedCards });
+  };
+  
+  const handleDiscard = () => {
+    onComplete({ discard: true });
+  };
+  
+  // 计算选中卡片的总能量
+  const calculateTotalEnergy = () => {
+    let total = 0;
+    selectedCards.forEach(cardId => {
+      const card = player?.getCard(cardId);
+      if (card && card.type === "energy") {
+        total += card.value;
+      }
+    });
+    return total;
+  };
+  
+  const totalEnergy = calculateTotalEnergy();
+  const hasEnoughEnergy = totalEnergy >= requirement;
+  
+  return (
+    <div className="bg-white rounded-lg p-4 min-w-[290px] flex flex-col items-center">
+      <h2 className="font-bold text-lg mb-4">BOSS战斗 - 出牌</h2>
+      <p className="mb-4">需要 {requirement} 点能量，当前已选：{totalEnergy} 点</p>
+      
+      <div className="grid grid-cols-3 gap-2 mb-4 w-full">
+        {player?.cards.map((card: Card) => (
+          <button
+            key={card.id}
+            className={`p-2 border rounded ${selectedCards.includes(card.id) ? 'bg-blue-200 border-blue-500' : 'bg-white border-gray-300'}`}
+            onClick={() => handleCardSelect(card.id)}
+          >
+            <div>{card.name}</div>
+            <div className="text-sm">{card.type === 'energy' ? `能量: ${card.value}` : '法术卡'}</div>
+          </button>
+        ))}
+      </div>
+      
+      <div className="flex gap-2">
+        <button
+          className={`bg-green-500 hover:bg-green-600 text-white rounded px-4 py-2 ${!hasEnoughEnergy && selectedCards.length > 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+          onClick={handlePlayCards}
+          disabled={!hasEnoughEnergy && selectedCards.length > 0}
+        >
+          出牌攻击
+        </button>
+        <button
+          className="bg-red-500 hover:bg-red-600 text-white rounded px-4 py-2"
+          onClick={handleDiscard}
+        >
+          弃牌撤退
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// BOSS战斗弃牌撤退事件组件
+const BossBattleDiscardEvent: React.FC<{ eventData: GameEventData; onComplete: (result: any) => void }> = ({ onComplete }) => {
+  const { gameInstance } = useGameContext();
+  const [selectedCardId, setSelectedCardId] = useState<number | null>(null);
+  
+  const player = gameInstance?.getCurrentPlayer();
+  
+  const handleDiscardCard = () => {
+    if (selectedCardId !== null) {
+      onComplete({ discardedCardId: selectedCardId });
+    }
+  };
+  
+  return (
+    <div className="bg-white rounded-lg p-4 min-w-[290px] flex flex-col items-center">
+      <h2 className="font-bold text-lg mb-4">BOSS战斗 - 弃牌撤退</h2>
+      <p className="mb-4">请选择一张卡片弃掉以撤退</p>
+      
+      <div className="grid grid-cols-3 gap-2 mb-4 w-full">
+        {player?.cards.map((card: Card) => (
+          <button
+            key={card.id}
+            className={`p-2 border rounded ${selectedCardId === card.id ? 'bg-red-200 border-red-500' : 'bg-white border-gray-300'}`}
+            onClick={() => setSelectedCardId(card.id)}
+          >
+            <div>{card.name}</div>
+            <div className="text-sm">{card.type === 'energy' ? `能量: ${card.value}` : '法术卡'}</div>
+          </button>
+        ))}
+      </div>
+      
+      <button
+        className={`bg-red-500 hover:bg-red-600 text-white rounded px-4 py-2 ${selectedCardId === null ? 'opacity-50 cursor-not-allowed' : ''}`}
+        onClick={handleDiscardCard}
+        disabled={selectedCardId === null}
+      >
+        确认弃牌撤退
       </button>
     </div>
   );
@@ -152,35 +274,65 @@ const GameEventLayer: React.FC = () => {
   useEffect(() => {
     if (!gameInstance) return;
 
-    // 监听事件系统中的新事件
     const eventSystem = gameInstance.eventSystem;
     
-    // 检查是否有待处理的事件
-    const checkPendingEvent = () => {
+    // 初始检查是否有待处理的事件
+    const checkInitialEvent = () => {
       const pendingEvent = eventSystem.getPendingEvent();
       if (pendingEvent) {
         setCurrentEvent(pendingEvent);
       }
     };
-
-    // 定期检查待处理事件
-    const interval = setInterval(checkPendingEvent, 100);
+    
+    // 订阅所有可能的事件类型
+    const handleNewEvent = (eventData: GameEventData) => {
+      setCurrentEvent(eventData);
+    };
+    
+    // 订阅所有相关事件类型
+    const eventTypes: GameEventType[] = [
+      "SPELL_FIX_DICE",
+      "SPELL_SWAP_POSITION",
+      "SPELL_EXTRA_TURN",
+      "SPELL_SHIELD",
+      "BOSS_BATTLE_START",
+      "BOSS_BATTLE_PLAY_CARDS",
+      "BOSS_BATTLE_DISCARD",
+      "TILE_TREASURE",
+      "TILE_REVERSE",
+      "TILE_SUPPLY",
+      "TILE_TELEPORT",
+      "GAME_OVER",
+      "TURN_END",
+      "PLAYER_CHOICE",
+      "CUSTOM"
+    ];
+    
+    // 为每个事件类型订阅处理函数
+    eventTypes.forEach(type => {
+      eventSystem.subscribe(type, handleNewEvent);
+    });
     
     // 初始检查
-    checkPendingEvent();
+    checkInitialEvent();
 
+    // 清理订阅
     return () => {
-      clearInterval(interval);
+      eventTypes.forEach(type => {
+        eventSystem.unsubscribe(type, handleNewEvent);
+      });
     };
   }, [gameInstance]);
 
   // 处理事件完成
-  const handleEventComplete = (_result: any) => {
+  const handleEventComplete = (result: any) => {
     if (!gameInstance || !currentEvent) return;
     
     // 通知事件系统事件已完成
-    // 这里需要一个事件ID来完成事件，暂时用时间戳作为标识
-    // 在实际实现中，应该使用真实的事件ID
+    // 使用事件的时间戳作为临时的事件ID
+    // 在实际应用中，应该确保有正确的事件ID机制
+    const eventId = `event_${currentEvent.timestamp}`;
+    gameInstance.eventSystem.completeEvent(eventId, result);
     
     // 移除已处理的事件
     gameInstance.eventSystem.removeProcessedEvent();
@@ -204,6 +356,10 @@ const GameEventLayer: React.FC = () => {
         return <SpellShieldEvent eventData={currentEvent} onComplete={handleEventComplete} />;
       case "BOSS_BATTLE_START":
         return <BossBattleStartEvent eventData={currentEvent} onComplete={handleEventComplete} />;
+      case "BOSS_BATTLE_PLAY_CARDS":
+        return <BossBattlePlayCardsEvent eventData={currentEvent} onComplete={handleEventComplete} />;
+      case "BOSS_BATTLE_DISCARD":
+        return <BossBattleDiscardEvent eventData={currentEvent} onComplete={handleEventComplete} />;
       default:
         return (
           <div className="bg-white rounded-lg p-4 min-w-[290px] flex flex-col items-center">
