@@ -1,7 +1,7 @@
-import { Player, PlayerData } from "./Player";
+import { Player, PlayerData, DestinyPlayer, SisterFourPlayer, PigsyPlayer, BigBirdPlayer, ThiefPlayer, MilkshakePlayer, PlayerRole } from "./Player";
 import { CardDeck } from "./CardDeck";
 import { GameBoard } from "./GameBoard";
-import { Tile } from "./Tile";
+import { BaseTile } from "./Tile";
 
 // 游戏状态接口
 export interface GameState {
@@ -56,10 +56,14 @@ export class Game {
     spellShield?: number;
   } = {};
   private _activeSpellPending: {
-    card: any | null,
-    playerId: number | null,
-    options?: any
+    card: any | null;
+    playerId: number | null;
+    options?: any;
   } = { card: null, playerId: null };
+  /**
+   * 剩余行动步骤数组，未空行动即结束
+   */
+  private _moveSteps: number[] = [];
 
   constructor() {
     this._players = [];
@@ -117,15 +121,21 @@ export class Game {
     this._cardDeck = CardDeck.createStandardDeck();
 
     // 创建玩家并分配起始手牌
+    const roles: PlayerRole[] = [
+      'destiny','sister_four','pigsy','big_bird','thief','milkshake'];
     for (let i = 0; i < playerCount; i++) {
       const startingCards = this._cardDeck.draw(4);
-      const player = new Player(
-        i + 1,
-        `玩家 ${i + 1}`,
-        "warrior",
-        0,
-        startingCards
-      );
+      let player: Player;
+      const thisRole = roles[i] ?? 'destiny';
+      switch (thisRole) {
+        case 'destiny': player = new DestinyPlayer(i+1, `天命人`, 'destiny', 0, startingCards); break;
+        case 'sister_four': player = new SisterFourPlayer(i+1, `四妹`, 'sister_four', 0, startingCards); break;
+        case 'pigsy': player = new PigsyPlayer(i+1, `猪八戒`, 'pigsy', 0, startingCards); break;
+        case 'big_bird': player = new BigBirdPlayer(i+1, `大鸟姐姐`, 'big_bird', 0, startingCards); break;
+        case 'thief': player = new ThiefPlayer(i+1, `神偷大盗`, 'thief', 0, startingCards); break;
+        case 'milkshake': player = new MilkshakePlayer(i+1, `奶昔大哥`, 'milkshake', 0, startingCards); break;
+        default: player = new DestinyPlayer(i+1, `天命人`, 'destiny', 0, startingCards);
+      }
       this._players.push(player);
     }
 
@@ -141,68 +151,65 @@ export class Game {
     return this._players[this._currentPlayerIndex];
   }
 
-  // 处理骰子结果
-  processDiceRoll(diceResult: DiceResult): void {
-    if (!this._gameStarted || this._gameOver) {
+  /**
+   * 异步推进步数流程
+   */
+  async processSteps(steps: number): Promise<void> {
+    if (!this._gameStarted || this._gameOver)
       throw new Error("游戏未开始或已结束");
+    const player = this.getCurrentPlayer();
+    this._moveSteps = [steps];
+    while (this._moveSteps.length > 0) {
+      let currentStep = this._moveSteps.shift()!;
+      // 逐格推进
+      while (Math.abs(currentStep) > 0) {
+        player.move(currentStep > 0 ? 1 : -1);
+        const tile = this._gameBoard.getTile(player.position);
+        if (!tile) break;
+        await this.handleTileEffect(tile, "pass"); // 路过
+        if (currentStep > 0) currentStep--;
+        else currentStep++;
+      }
+      const tile = this._gameBoard.getTile(player.position);
+      if (tile) {
+        // 如果玩家方向不是正向，调整为正向
+        if (player.direction !== 'forward') {
+          player.direction = 'forward';
+        }
+        await this.handleTileEffect(tile, "stay"); // 停留
+      }
     }
-
-    const currentPlayer = this.getCurrentPlayer();
-
-    // 移动玩家
-    currentPlayer.move(diceResult.total);
-
-    // 检查是否到达终点
-    if (currentPlayer.position >= this._gameBoard.totalTiles - 1) {
-      this.endGame(currentPlayer);
-      return;
-    }
-
-    // 处理格子效果
-    this.processTileEffect(currentPlayer, diceResult.total);
-
-    // 切换到下一个玩家
-    this.nextTurn();
   }
 
-  // 处理格子效果
-  private processTileEffect(player: Player, diceTotal: number): void {
-    const tile = this._gameBoard.getTile(player.position);
-    if (!tile) return;
-
-    switch (tile.type) {
-      case "treasure":
-        // 触发宝箱事件，抽取一张牌
-        if (!this._cardDeck.isEmpty()) {
-          const drawnCard = this._cardDeck.draw(1)[0];
-          player.addCard(drawnCard);
-        }
-        break;
-
-      case "supply":
-        // 补给站，获得2张牌
-        if (!this._cardDeck.isEmpty()) {
-          const drawnCards = this._cardDeck.draw(
-            Math.min(2, this._cardDeck.size)
-          );
-          drawnCards.forEach((card) => player.addCard(card));
-        }
-        break;
-
-      case "reverse":
-        // 反转方向一个回合
-        player.reverseDirection();
-        break;
-
-      case "boss":
-        // BOSS战斗逻辑
-        this.handleBossBattle(player, tile, diceTotal);
-        break;
-
-      default:
-        // 普通格子无特殊效果
-        break;
+  /**
+   * 异步处理单个格子的效果，mode:'pass'|'stay'。实际交互可由具体格子内异步Promise实现。
+   */
+  private async handleTileEffect(
+    tile: BaseTile,
+    mode: "pass" | "stay"
+  ): Promise<void> {
+    const player = this.getCurrentPlayer();
+    const handlers = (player as any).getTileHandlers?.();
+    const roleTileHandler = handlers?.[tile.type];
+    const fn = mode === 'pass' ? roleTileHandler?.onPass : roleTileHandler?.onStay;
+    if (fn) {
+      await fn(this, player, tile);
+    } else {
+      await (mode === 'pass' ? tile.onPass(this, player) : tile.onStay(this, player));
     }
+  }
+
+  // 供 UI 挂钩，等待异步格子内玩家操作，返回Promise<void>，实际UI可调用resolve
+  public waitForPlayerChoice(tile: BaseTile): Promise<void> {
+    // 这里简单实现一个挂起等待的Promise，UI拿到resolve之后实际推进
+    return new Promise((resolve) => {
+      // 可存在一个队列或pending标记留给UI
+      // 如 this._pendingChoiceResolve = resolve
+    });
+  }
+
+  public addMoveSteps(count: number): void {
+    this._moveSteps.push(count);
   }
 
   // 切换到下一个回合
@@ -210,7 +217,7 @@ export class Game {
   // 处理BOSS战斗
   private handleBossBattle(
     player: Player,
-    tile: Tile,
+    tile: BaseTile,
     diceTotal: number
   ): void {
     if (!tile.bossRequirement) return;
@@ -222,7 +229,7 @@ export class Game {
   // 启动基于卡片的BOSS战斗
   private startCardBasedBossBattle(
     player: Player,
-    tile: Tile,
+    tile: BaseTile,
     diceTotal: number
   ): void {
     // 设置BOSS战斗状态，等待玩家选择卡片
@@ -321,7 +328,6 @@ export class Game {
 
     if (success) {
       // BOSS战斗成功，继续游戏
-      this.nextTurn();
     }
     // 失败的情况已经在discardCardAndRetreat中处理了移动逻辑
   }
@@ -415,12 +421,9 @@ export class Game {
   // 激活法术卡，等待玩家参数或直接执行
   activateSpellCard(player: Player, cardId: number): boolean {
     const card = player.getCard(cardId);
-    if (!card || card.type !== 'spell') return false;
+    if (!card || card.type !== "spell") return false;
     // 判断是否需要参数
-    if (
-      card.effect === 'fix_dice' ||
-      card.effect === 'swap_position'
-    ) {
+    if (card.effect === "fix_dice" || card.effect === "swap_position") {
       // 等待后续 UI 提供参数
       this._activeSpellPending = { card, playerId: player.id, options: {} };
       return true;
@@ -432,24 +435,28 @@ export class Game {
   // 使用法术卡，执行具体效果（如被动型可直接用此; 需参数的由 UI 收集参数后再回调此函数）
   playSpellCard(player: Player, cardId: number, options?: any): boolean {
     const card = player.getCard(cardId);
-    if (!card || card.type !== 'spell') return false;
+    if (!card || card.type !== "spell") return false;
     // 每次执行时清空激活态
     this._activeSpellPending = { card: null, playerId: null };
     switch (card.effect) {
-      case 'fix_dice': {
-        if (!options || typeof options.fixedValue !== 'number') return false;
+      case "fix_dice": {
+        if (!options || typeof options.fixedValue !== "number") return false;
         this._activeSpells.fixedDice = options.fixedValue;
         player.removeCard(cardId);
+        // TODO this.processDiceRoll()
         return true;
       }
-      case 'extra_turn': {
+      case "extra_turn": {
         this._activeSpells.extraTurn = true;
         player.removeCard(cardId);
         return true;
       }
-      case 'swap_position': {
-        if (!options || typeof options.targetPlayerId !== 'number') return false;
-        const target = this._players.find(p => p.id === options.targetPlayerId);
+      case "swap_position": {
+        if (!options || typeof options.targetPlayerId !== "number")
+          return false;
+        const target = this._players.find(
+          (p) => p.id === options.targetPlayerId
+        );
         if (!target) return false;
         const tmp = player.position;
         player.position = target.position;
@@ -457,7 +464,7 @@ export class Game {
         player.removeCard(cardId);
         return true;
       }
-      case 'spell_shield': {
+      case "spell_shield": {
         this._activeSpells.spellShield = player.id;
         player.removeCard(cardId);
         return true;

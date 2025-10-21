@@ -1,7 +1,7 @@
-import { Tile, TileData } from './Tile'
+import { BaseTile, EmptyTile, TreasureTile, SupplyTile, ReverseTile, BossTile, TileData, TileType } from './Tile'
 
 export class GameBoard {
-  private _tiles: Tile[]
+  private _tiles: BaseTile[]
   private readonly _totalTiles: number
 
   constructor(totalTiles: number = 81) {
@@ -10,7 +10,7 @@ export class GameBoard {
   }
 
   // 获取所有格子
-  get tiles(): Tile[] {
+  get tiles(): BaseTile[] {
     return [...this._tiles]
   }
 
@@ -20,12 +20,12 @@ export class GameBoard {
   }
 
   // 根据位置获取格子
-  getTile(position: number): Tile | undefined {
+  getTile(position: number): BaseTile | undefined {
     return this._tiles.find(tile => tile.position === position)
   }
 
   // 设置格子
-  setTiles(tiles: Tile[]): void {
+  setTiles(tiles: BaseTile[]): void {
     if (tiles.length !== this._totalTiles) {
       throw new Error(`格子数量不匹配，期望 ${this._totalTiles} 个，实际 ${tiles.length} 个`)
     }
@@ -45,7 +45,7 @@ export class GameBoard {
     const BOSS_POSITIONS = [20, 32, 44, 56, 68, 80]
     const BOSS_REQUIREMENTS = [8, 12, 12, 14, 18, 20]
     
-    const tiles: Tile[] = []
+    const tiles: BaseTile[] = []
     const specialPositions = new Set<number>()
     
     // 添加BOSS位置
@@ -74,25 +74,21 @@ export class GameBoard {
     
     // 创建所有格子
     for (let i = 0; i < this._totalTiles; i++) {
-      let type: Tile['type'] = 'empty'
-      let bossRequirement: number | undefined
-      
+      let tile: BaseTile
       if (BOSS_POSITIONS.includes(i)) {
-        type = 'boss'
-        bossRequirement = BOSS_REQUIREMENTS[BOSS_POSITIONS.indexOf(i)]
+        tile = new BossTile(i, BOSS_REQUIREMENTS[BOSS_POSITIONS.indexOf(i)])
       } else if (specialPositions.has(i)) {
-        // 确定特殊格子的类型
         if (i % 7 === 0) {
-          type = 'treasure'
+          tile = new TreasureTile(i)
         } else if (i % 9 === 0) {
-          type = 'reverse'
+          tile = new ReverseTile(i)
         } else {
-          // 不是宝箱也不是反转的，就是补给站
-          type = 'supply'
+          tile = new SupplyTile(i)
         }
+      } else {
+        tile = new EmptyTile(i)
       }
-      
-      tiles.push(new Tile(i, type, bossRequirement))
+      tiles.push(tile)
     }
 
     this.setTiles(tiles)
@@ -106,7 +102,7 @@ export class GameBoard {
   // 从数据对象创建GameBoard实例
   static fromData(tilesData: TileData[], totalTiles: number = 81): GameBoard {
     const board = new GameBoard(totalTiles)
-    const tiles = tilesData.map(data => Tile.fromData(data))
+    const tiles = tilesData.map(data => BaseTile.fromData(data))
     board.setTiles(tiles)
     return board
   }
