@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { Tile } from '../entities/Tile'
+import { Tile } from '../entities'
 import { DiceResult } from '../entities/Game'
 import { Game } from '../entities/Game'
 
@@ -87,7 +87,7 @@ export const generateGameTiles = (): Tile[] => {
       }
     }
     
-    tiles.push(new Tile(i, type, bossRequirement))
+    tiles.push(new (Tile as any)(i, type, bossRequirement))
   }
   
   return tiles

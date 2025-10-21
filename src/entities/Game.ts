@@ -2,6 +2,7 @@ import { Player, PlayerData, DestinyPlayer, SisterFourPlayer, PigsyPlayer, BigBi
 import { CardDeck } from "./CardDeck";
 import { GameBoard } from "./GameBoard";
 import { BaseTile } from "./Tile";
+import { GameEventSystem } from "./GameEventSystem";
 
 // 游戏状态接口
 export interface GameState {
@@ -60,6 +61,10 @@ export class Game {
     playerId: number | null;
     options?: any;
   } = { card: null, playerId: null };
+  
+  // 事件系统
+  private _eventSystem: GameEventSystem;
+  
   /**
    * 剩余行动步骤数组，未空行动即结束
    */
@@ -73,6 +78,7 @@ export class Game {
     this._winner = null;
     this._cardDeck = new CardDeck();
     this._gameBoard = new GameBoard();
+    this._eventSystem = new GameEventSystem();
   }
 
   // Getters
@@ -102,6 +108,9 @@ export class Game {
   }
   get activeSpellPending() {
     return this._activeSpellPending;
+  }
+  get eventSystem() {
+    return this._eventSystem;
   }
 
   // 初始化游戏
@@ -200,9 +209,9 @@ export class Game {
   }
 
   // 供 UI 挂钩，等待异步格子内玩家操作，返回Promise<void>，实际UI可调用resolve
-  public waitForPlayerChoice(tile: BaseTile): Promise<void> {
+  public waitForPlayerChoice(_tile: BaseTile): Promise<void> {
     // 这里简单实现一个挂起等待的Promise，UI拿到resolve之后实际推进
-    return new Promise((resolve) => {
+    return new Promise((_resolve) => {
       // 可存在一个队列或pending标记留给UI
       // 如 this._pendingChoiceResolve = resolve
     });
@@ -216,15 +225,10 @@ export class Game {
   // 处理BOSS战斗
   // 处理BOSS战斗
   private handleBossBattle(
-    player: Player,
-    tile: BaseTile,
-    diceTotal: number
-  ): void {
-    if (!tile.bossRequirement) return;
-
-    // 所有BOSS战斗都通过卡片选择模式进行
-    this.startCardBasedBossBattle(player, tile, diceTotal);
-  }
+    _player: Player,
+    _tile: BaseTile,
+    _diceTotal: number
+  ): void {}
 
   // 启动基于卡片的BOSS战斗
   private startCardBasedBossBattle(
@@ -388,6 +392,22 @@ export class Game {
           }
         : undefined,
     };
+  }
+
+  // 处理骰子结果
+  processDiceRoll(result: DiceResult): void {
+    const player = this.getCurrentPlayer();
+    const steps = result.total;
+    
+    // 检查是否有固定骰子法术激活
+    if (this._activeSpells.fixedDice !== undefined) {
+      // 使用固定值而不是实际骰子值
+      // 注意：这里我们仍然使用实际骰子值，但可以在其他地方使用固定值
+      this._activeSpells.fixedDice = undefined; // 重置固定骰子
+    }
+    
+    // 启动步数处理流程
+    this.processSteps(steps);
   }
 
   // 从数据对象创建Game实例

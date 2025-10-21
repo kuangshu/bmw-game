@@ -38,9 +38,13 @@ export abstract class BaseTile implements TileData {
     this.bossRequirement = bossRequirement;
   }
   // 路过格子时异步触发（默认无事发生）
-  async onPass(_game: Game, _player: Player): Promise<void> {}
+  async onPass(_game: Game, _player: Player): Promise<void> {
+    // 默认无事发生
+  }
   // 停留格子时异步触发（默认无事发生）
-  async onStay(_game: Game, _player: Player): Promise<void> {}
+  async onStay(_game: Game, _player: Player): Promise<void> {
+    // 默认无事发生
+  }
 
   // 其余接口
   get description(): string {

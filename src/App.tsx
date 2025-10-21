@@ -3,6 +3,7 @@ import DiceRoller from "./components/DiceRoller";
 import PlayerHand from "./components/PlayerHand";
 import { useGameContext } from "./contexts/GameContext";
 import SpellActionLayer from "./components/SpellActionLayer";
+import GameEventLayer from "./components/GameEventLayer";
 
 function AppContent() {
   const { gameInstance, orientation, isMobile, initializeGame, restartGame } =
@@ -109,6 +110,8 @@ function AppContent() {
       </div>
       {/* 法术遮罩（条件渲染，后续补实现） */}
       <SpellActionLayer />
+      {/* 游戏事件层 */}
+      <GameEventLayer />
     </div>
   );
 }

@@ -45,7 +45,36 @@ const PlayerHand: React.FC = () => {
     const cardId = selectedIds[0]
     const card = player.cards.find((c: any) => c.id === cardId)
     if (card && card.type === 'spell') {
-      gameInstance.activateSpellCard(gameInstance.players[gameState.currentPlayerIndex], cardId)
+      // 使用事件系统发布法术卡事件
+      const eventSystem = gameInstance.eventSystem;
+      let eventType: any = "CUSTOM"; // 默认事件类型
+      
+      // 根据法术卡效果确定事件类型
+      switch (card.effect) {
+        case "fix_dice":
+          eventType = "SPELL_FIX_DICE";
+          break;
+        case "swap_position":
+          eventType = "SPELL_SWAP_POSITION";
+          break;
+        case "extra_turn":
+          eventType = "SPELL_EXTRA_TURN";
+          break;
+        case "spell_shield":
+          eventType = "SPELL_SHIELD";
+          break;
+      }
+      
+      // 发布事件
+      eventSystem.publishEvent({
+        type: eventType,
+        playerId: player.id,
+        spellCardId: cardId,
+        options: {}
+      });
+      
+      // 旧的实现方式保留作为备选
+      // gameInstance.activateSpellCard(gameInstance.players[gameState.currentPlayerIndex], cardId)
       setSelectedIds([])
     }
   }
