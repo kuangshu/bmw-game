@@ -4,6 +4,7 @@ import { GameBoard } from "./GameBoard";
 import { BaseTile } from "./Tile";
 import { GameEventSystem } from "./GameEventSystem";
 import { PLAYER_ROLES, ROLE_INFO, GAME_CONFIG } from "../constants/game";
+import { PlayerRoleSelectionPayload } from "../components/GameEventLayer/PlayerRoleSelectionEvent";
 
 // 游戏状态接口
 export interface GameState {
@@ -141,7 +142,10 @@ export class Game {
     const availableRoles: PlayerRole[] = [...PLAYER_ROLES];
 
     // 一次性发布角色选择事件，让所有玩家依次选择
-    const roleSelectionResult = await this._eventSystem.waitForPlayerChoice({
+    const roleSelectionResult = await this._eventSystem.waitForPlayerChoice<
+      PlayerRoleSelectionPayload[0],
+      PlayerRoleSelectionPayload[1]
+    >({
       type: "PLAYER_ROLE_SELECTION",
       playerId: 1, // 使用第一个玩家ID，因为组件会处理所有玩家的选择
       eventData: {
@@ -247,8 +251,30 @@ export class Game {
     }
   }
 
+  /**
+   * 添加移动步数（用于处理定身术等效果）
+   */
   public addMoveSteps(count: number): void {
     this._moveSteps.push(count);
+  }
+
+  /**
+   * 交换两个玩家的位置
+   */
+  public swapPosition(playerId1: number, playerId2: number): boolean {
+    const player1 = this._players.find(p => p.id === playerId1);
+    const player2 = this._players.find(p => p.id === playerId2);
+    
+    if (!player1 || !player2) {
+      return false;
+    }
+    
+    // 交换位置
+    const tempPosition = player1.position;
+    player1.position = player2.position;
+    player2.position = tempPosition;
+    
+    return true;
   }
 
   // 切换到下一个回合

@@ -1,31 +1,43 @@
-import React, { useState } from 'react';
-import type { GameEventData } from '../../entities/GameEventSystem';
+import React, { useState } from "react";
+import { useGameContext } from "../../contexts/GameContext";
+import type { GameEventData } from "../../entities/GameEventSystem";
 
-// 定身术事件数据类型
-interface SpellFixDiceEventData {
-  // 可以添加特定于定身术事件的属性
-}
+export type SpellFixDicePayload = [null, { fixedValue: number }];
 
 interface SpellFixDiceEventProps {
-  eventData: GameEventData<SpellFixDiceEventData>;
-  onComplete: (result: { fixedValue: number }) => void;
+  eventData: GameEventData<SpellFixDicePayload[0]>;
+  onComplete: (result: SpellFixDicePayload[1]) => void;
 }
 
-const SpellFixDiceEvent: React.FC<SpellFixDiceEventProps> = ({ onComplete }) => {
+const SpellFixDiceEvent: React.FC<SpellFixDiceEventProps> = ({
+  onComplete,
+}) => {
+  const { gameInstance } = useGameContext();
   const [dice1, setDice1] = useState(1);
   const [dice2, setDice2] = useState(1);
 
   const handleSubmit = () => {
-    onComplete({ fixedValue: dice1 + dice2 });
+    if (!gameInstance) {
+      onComplete({ fixedValue: 0 });
+      return;
+    }
+
+    // 计算骰子点数总和
+    const totalSteps = dice1 + dice2;
+
+    // 完成事件，返回固定的骰子点数
+    onComplete({ fixedValue: totalSteps });
+
+    gameInstance.processSteps(totalSteps);
   };
 
   const diceSelect = (value: number, setValue: (v: number) => void) => (
     <select
       className="mx-1 border rounded px-2 py-1"
       value={value}
-      onChange={e => setValue(Number(e.target.value))}
+      onChange={(e) => setValue(Number(e.target.value))}
     >
-      {[1, 2, 3, 4, 5, 6].map(n => (
+      {[1, 2, 3, 4, 5, 6].map((n) => (
         <option key={n} value={n}>
           {n}
         </option>
