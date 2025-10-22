@@ -185,16 +185,14 @@ export class BossTile extends BaseTile {
     // 触发BOSS战斗开始事件
     const startResult = await game.eventSystem.waitForPlayerChoice<{ ready: boolean }>({
       type: 'BOSS_BATTLE_START',
-      playerId: player.id,
-      bossBattleData
+      playerId: player.id
     });
 
     if (startResult.ready) {
       // 触发BOSS战斗出牌事件
       const playResult = await game.eventSystem.waitForPlayerChoice<{ playCards?: boolean; discard?: boolean; cardIds?: number[] }>({
         type: 'BOSS_BATTLE_PLAY_CARDS',
-        playerId: player.id,
-        bossBattleData
+        playerId: player.id
       });
 
       if (playResult.playCards && playResult.cardIds) {
@@ -234,8 +232,7 @@ export class BossTile extends BaseTile {
     // 触发弃牌撤退事件
     const discardResult = await game.eventSystem.waitForPlayerChoice<{ cardId: number }>({
       type: 'BOSS_BATTLE_DISCARD',
-      playerId: player.id,
-      bossBattleData
+      playerId: player.id
     });
 
     if (discardResult.cardId) {

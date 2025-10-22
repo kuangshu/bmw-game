@@ -2,7 +2,7 @@ import WebGLBoard from "./components/WebGLBoard";
 import DiceRoller from "./components/DiceRoller";
 import PlayerHand from "./components/PlayerHand";
 import { useGameContext } from "./contexts/GameContext";
-import GameEventLayer from "./components/GameEventLayer";
+import GameEventLayer from "./components/GameEventLayer/GameEventLayer";
 
 function AppContent() {
   const { gameInstance, orientation, isMobile, initializeGame, restartGame } =

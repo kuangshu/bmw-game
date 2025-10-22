@@ -22,40 +22,31 @@ export type GameEventType =
   | "GAME_OVER"                // 游戏结束
   | "TURN_END"                 // 回合结束
   | "PLAYER_CHOICE"            // 玩家选择
+  | "PLAY_CARDS"               // 出牌事件
   | "CUSTOM";                  // 自定义事件
 
-// 事件数据接口
-export interface GameEventData {
+// 事件数据接口（泛型）
+export interface GameEventData<T = any> {
   // 通用字段
   type: GameEventType;
   playerId?: number;
   timestamp: number;
+  eventId: string; // 事件唯一标识
   
-  // 特定事件数据
-  spellCardId?: number;
-  bossBattleData?: {
-    position: number;
-    requirement: number;
-    originalPosition: number;
-    remainingSteps: number;
-  };
-  tileData?: {
-    position: number;
-    type: string;
-  };
-  customData?: any;
+  // 特定事件数据（泛型参数）
+  eventData?: T;
   
   // 选项参数
   options?: any;
 }
 
-// 事件回调函数类型
-export type GameEventCallback = (result: any) => void;
+// 事件回调函数类型（泛型）
+export type GameEventCallback<T = any> = (result: T) => void;
 
-// 事件监听器接口
-export interface GameEventListener {
+// 事件监听器接口（泛型）
+export interface GameEventListener<T = any> {
   eventType: GameEventType;
-  callback: GameEventCallback;
+  callback: GameEventCallback<T>;
 }
 
 /**
@@ -63,26 +54,27 @@ export interface GameEventListener {
  * 负责管理游戏中的各种异步事件和玩家交互
  */
 export class GameEventSystem {
-  private events: GameEventData[] = [];
-  private listeners: GameEventListener[] = [];
-  private pendingEvents: Map<string, GameEventCallback> = new Map();
+  private events: GameEventData<any>[] = [];
+  private listeners: GameEventListener<any>[] = [];
+  private pendingEvents: Map<string, GameEventCallback<any>> = new Map();
   
   /**
    * 发布事件
    * @param event 事件数据
    * @returns 事件ID，用于后续处理结果
    */
-  publishEvent(event: Omit<GameEventData, 'timestamp'>): string {
-    const eventWithTimestamp: GameEventData = {
+  publishEvent<T = any>(event: Omit<GameEventData<T>, 'timestamp' | 'eventId'>): string {
+    // 生成事件ID
+    const eventId = `event_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+    
+    const eventWithTimestamp: GameEventData<T> = {
       ...event,
+      eventId,
       timestamp: Date.now()
     };
     
     // 添加到事件队列
     this.events.push(eventWithTimestamp);
-    
-    // 生成事件ID
-    const eventId = `event_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
     
     // 通知监听器
     this.notifyListeners(eventWithTimestamp);
@@ -95,7 +87,7 @@ export class GameEventSystem {
    * @param eventType 事件类型
    * @param callback 回调函数
    */
-  subscribe(eventType: GameEventType, callback: GameEventCallback): void {
+  subscribe<T = any>(eventType: GameEventType, callback: GameEventCallback<T>): void {
     this.listeners.push({ eventType, callback });
   }
   
@@ -104,7 +96,7 @@ export class GameEventSystem {
    * @param eventType 事件类型
    * @param callback 回调函数
    */
-  unsubscribe(eventType: GameEventType, callback: GameEventCallback): void {
+  unsubscribe<T = any>(eventType: GameEventType, callback: GameEventCallback<T>): void {
     this.listeners = this.listeners.filter(
       listener => !(listener.eventType === eventType && listener.callback === callback)
     );
@@ -114,7 +106,7 @@ export class GameEventSystem {
    * 通知监听器
    * @param event 事件数据
    */
-  private notifyListeners(event: GameEventData): void {
+  private notifyListeners<T = any>(event: GameEventData<T>): void {
     this.listeners
       .filter(listener => listener.eventType === event.type)
       .forEach(listener => listener.callback(event));
@@ -125,10 +117,10 @@ export class GameEventSystem {
    * @param event 事件数据
    * @returns Promise，解析为用户选择的结果
    */
-  waitForPlayerChoice<T>(event: Omit<GameEventData, 'timestamp'>): Promise<T> {
+  waitForPlayerChoice<T = any>(event: Omit<GameEventData<T>, 'timestamp' | 'eventId'>): Promise<T> {
     return new Promise((resolve) => {
       const eventId = this.publishEvent(event);
-      this.pendingEvents.set(eventId, resolve as GameEventCallback);
+      this.pendingEvents.set(eventId, resolve as GameEventCallback<T>);
     });
   }
   
@@ -137,7 +129,7 @@ export class GameEventSystem {
    * @param eventId 事件ID
    * @param result 处理结果
    */
-  completeEvent(eventId: string, result: any): void {
+  completeEvent<T = any>(eventId: string, result: T): void {
     const resolve = this.pendingEvents.get(eventId);
     if (resolve) {
       resolve(result);
@@ -148,7 +140,7 @@ export class GameEventSystem {
   /**
    * 获取待处理事件
    */
-  getPendingEvent(): GameEventData | undefined {
+  getPendingEvent<T = any>(): GameEventData<T> | undefined {
     if (this.events.length > 0) {
       return this.events[0];
     }
@@ -157,10 +149,20 @@ export class GameEventSystem {
   
   /**
    * 移除已处理的事件
+   * @param eventId 可选的事件ID，如果提供则移除指定事件，否则移除第一个事件
    */
-  removeProcessedEvent(): void {
-    if (this.events.length > 0) {
-      this.events.shift();
+  removeProcessedEvent(eventId?: string): void {
+    if (eventId) {
+      // 按eventId精准移除
+      const index = this.events.findIndex(event => event.eventId === eventId);
+      if (index !== -1) {
+        this.events.splice(index, 1);
+      }
+    } else {
+      // 移除第一个事件（向后兼容）
+      if (this.events.length > 0) {
+        this.events.shift();
+      }
     }
   }
   
