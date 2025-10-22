@@ -3,7 +3,7 @@ import { useGameContext } from '../contexts/GameContext'
 import { GameEventType } from '../entities'
 
 const PlayerHand: React.FC = () => {
-  const { gameInstance, endTurn } = useGameContext()
+  const { gameInstance, endTurn, canRollDice } = useGameContext()
   const [selectedIds, setSelectedIds] = useState<number[]>([])
   const [currentEventId, setCurrentEventId] = useState<string | null>(null)
   const [isPlayCardsMode, setIsPlayCardsMode] = useState(false)
@@ -205,8 +205,8 @@ const PlayerHand: React.FC = () => {
         <div className="text-center text-gray-500 text-sm py-4">暂无手牌</div>
       )}
       
-      {/* 回合结束按钮 */}
-      {!isPlayCardsMode && (
+      {/* 回合结束按钮 - 只在当前回合投掷行为结束后显示 */}
+      {!isPlayCardsMode && !canRollDice() && (
         <button
           className="mt-4 w-full py-2 bg-gray-700 text-white rounded hover:bg-gray-900"
           onClick={endTurn}

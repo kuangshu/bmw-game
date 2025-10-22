@@ -23,6 +23,7 @@ export type GameEventType =
   | "TURN_END"                 // 回合结束
   | "PLAYER_CHOICE"            // 玩家选择
   | "PLAY_CARDS"               // 出牌事件
+  | "PLAYER_ROLE_SELECTION"    // 玩家角色选择
   | "CUSTOM";                  // 自定义事件
 
 // 事件数据接口（泛型）

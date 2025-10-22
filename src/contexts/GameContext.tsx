@@ -27,7 +27,6 @@ interface GameContextType {
   // 地图相关
   tiles: Tile[]
   generateTiles: () => void
-  activeSpellPending: { card: any | null, playerId: number | null, options?: any };
   
   // 骰子投掷次数相关
   getDiceRollCount: () => number
@@ -130,10 +129,10 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     return () => window.removeEventListener('resize', checkDeviceAndOrientation)
   }, [])
 
-  // 初始化游戏
-  const initializeGame = (playerCount: number) => {
+  // 初始化游戏（异步方法，支持角色选择）
+  const initializeGame = async (playerCount: number) => {
     const game = new Game()
-    game.initialize(playerCount)
+    await game.initialize(playerCount)
     
     setGameInstance(game)
   }
@@ -188,10 +187,10 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     return gameInstance ? gameInstance.getDiceRollCount() : 0
   }
   
-  // 检查是否可以投掷骰子（默认每回合1次，使用法术卡后可以多1次）
+  // 检查是否可以投掷骰子（默认每回合1次，使用法术卡后可以额外增加次数）
   const canRollDice = (): boolean => {
     if (!gameInstance) return false
-    return gameInstance.getDiceRollCount() < 2 // 默认1次 + 可能的额外1次
+    return gameInstance.canRollDice()
   }
 
   // 生成地图
@@ -231,7 +230,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     // 地图相关
     tiles,
     generateTiles,
-    activeSpellPending: gameInstance ? gameInstance.activeSpellPending : { card: null, playerId: null },
     
     // 骰子投掷次数相关
     getDiceRollCount,

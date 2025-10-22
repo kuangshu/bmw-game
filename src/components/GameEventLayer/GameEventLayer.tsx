@@ -8,6 +8,7 @@ import SpellShieldEvent from './SpellShieldEvent';
 import BossBattleStartEvent from './BossBattleStartEvent';
 import BossBattlePlayCardsEvent from './BossBattlePlayCardsEvent';
 import BossBattleDiscardEvent from './BossBattleDiscardEvent';
+import PlayerRoleSelectionEvent from './PlayerRoleSelectionEvent';
 
 
 
@@ -50,7 +51,8 @@ const GameEventLayer: React.FC = () => {
       "GAME_OVER",
       "TURN_END",
       "PLAYER_CHOICE",
-      "CUSTOM"
+      "CUSTOM",
+      "PLAYER_ROLE_SELECTION"
     ];
     
     // 为每个事件类型订阅处理函数
@@ -103,6 +105,8 @@ const GameEventLayer: React.FC = () => {
         return <BossBattlePlayCardsEvent eventData={currentEvent} onComplete={handleEventComplete} />;
       case "BOSS_BATTLE_DISCARD":
         return <BossBattleDiscardEvent eventData={currentEvent} onComplete={handleEventComplete} />;
+      case "PLAYER_ROLE_SELECTION":
+        return <PlayerRoleSelectionEvent eventData={currentEvent} onComplete={handleEventComplete} />;
       default:
         return (
           <div className="bg-white rounded-lg p-4 min-w-[290px] flex flex-col items-center">

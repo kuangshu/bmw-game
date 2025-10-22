@@ -232,6 +232,26 @@ export class MilkshakePlayer extends Player {
   }
 }
 
+// 角色工厂函数
+export function createPlayer(id: number, name: string, role: PlayerRole, position: number = 0, cards: Card[] = []): Player {
+  switch (role) {
+    case "destiny":
+      return new DestinyPlayer(id, name, role, position, cards);
+    case "sister_four":
+      return new SisterFourPlayer(id, name, role, position, cards);
+    case "pigsy":
+      return new PigsyPlayer(id, name, role, position, cards);
+    case "big_bird":
+      return new BigBirdPlayer(id, name, role, position, cards);
+    case "thief":
+      return new ThiefPlayer(id, name, role, position, cards);
+    case "milkshake":
+      return new MilkshakePlayer(id, name, role, position, cards);
+    default:
+      return new DestinyPlayer(id, name, "destiny", position, cards);
+  }
+}
+
 // 3D 展示支持（需要 three.js & Render 类）
 import * as THREE from "three";
 import type { Render } from "../components/Render";
