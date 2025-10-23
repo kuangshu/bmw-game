@@ -27,10 +27,7 @@ export abstract class BaseTile implements TileData {
   readonly position: number;
   readonly type: TileType;
 
-  constructor(
-    position: number,
-    type: TileType = "empty"
-  ) {
+  constructor(position: number, type: TileType = "empty") {
     this.position = position;
     this.type = type;
   }
@@ -156,20 +153,20 @@ export class BossTile extends BaseTile {
     super(position, "boss");
     this.bossRequirement = bossRequirement;
   }
-  
+
   async onPass(game: Game, player: Player): Promise<void> {
     await this.handleBossBattle(game, player, 0);
   }
-  
+
   async onStay(game: Game, player: Player): Promise<void> {
     await this.handleBossBattle(game, player, 0);
   }
-  
+
   // 重写 description getter 以显示 bossRequirement
   get description(): string {
     return `BOSS格，需要 ${this.bossRequirement || 0} 点能量击败BOSS`;
   }
-  
+
   // 重写 toJSON 方法以包含 bossRequirement
   toJSON(): TileData {
     return {
@@ -178,7 +175,7 @@ export class BossTile extends BaseTile {
       bossRequirement: this.bossRequirement,
     };
   }
-  
+
   private async handleBossBattle(
     game: Game,
     player: Player,
@@ -190,22 +187,32 @@ export class BossTile extends BaseTile {
       position: this.position,
       requirement: this.bossRequirement || 0,
       originalPosition: player.position,
-      remainingSteps: diceTotal
+      remainingSteps: diceTotal,
     };
 
-    console.log(`⚔️ ${player.name} 进入BOSS战斗！需要 ${this.bossRequirement} 点能量`);
+    console.log(
+      `⚔️ ${player.name} 进入BOSS战斗！需要 ${this.bossRequirement} 点能量`
+    );
 
     // 触发BOSS战斗开始事件
-    const startResult = await game.eventSystem.waitForPlayerChoice<{ ready: boolean }>({
-      type: 'BOSS_BATTLE_START',
-      playerId: player.id
+    const startResult = await game.eventSystem.waitForPlayerChoice<
+      BossBattleStartPayload[0],
+      BossBattleStartPayload[1]
+    >({
+      type: "BOSS_BATTLE_START",
+      playerId: player.id,
+      eventData: { requirement: this.bossRequirement || 0 },
     });
 
     if (startResult.ready) {
       // 触发BOSS战斗出牌事件
-      const playResult = await game.eventSystem.waitForPlayerChoice<{ playCards?: boolean; discard?: boolean; cardIds?: number[] }>({
-        type: 'BOSS_BATTLE_PLAY_CARDS',
-        playerId: player.id
+      const playResult = await game.eventSystem.waitForPlayerChoice<{
+        playCards?: boolean;
+        discard?: boolean;
+        cardIds?: number[];
+      }>({
+        type: "BOSS_BATTLE_PLAY_CARDS",
+        playerId: player.id,
       });
 
       if (playResult.playCards && playResult.cardIds) {
@@ -223,9 +230,13 @@ export class BossTile extends BaseTile {
           for (const cardId of playResult.cardIds) {
             player.removeCard(cardId);
           }
-          console.log(`🎉 ${player.name} 使用卡片击败BOSS！总能量：${totalEnergy}`);
+          console.log(
+            `🎉 ${player.name} 使用卡片击败BOSS！总能量：${totalEnergy}`
+          );
         } else {
-          console.log(`❌ ${player.name} 卡片能量不足！总能量：${totalEnergy}，需要：${this.bossRequirement}`);
+          console.log(
+            `❌ ${player.name} 卡片能量不足！总能量：${totalEnergy}，需要：${this.bossRequirement}`
+          );
           // 能量不足，继续弃牌撤退流程
           await this.handleBossRetreat(game, player, bossBattleData);
         }
@@ -240,12 +251,19 @@ export class BossTile extends BaseTile {
   private async handleBossRetreat(
     game: Game,
     player: Player,
-    bossBattleData: { position: number; requirement: number; originalPosition: number; remainingSteps: number }
+    bossBattleData: {
+      position: number;
+      requirement: number;
+      originalPosition: number;
+      remainingSteps: number;
+    }
   ): Promise<void> {
     // 触发弃牌撤退事件
-    const discardResult = await game.eventSystem.waitForPlayerChoice<{ cardId: number }>({
-      type: 'BOSS_BATTLE_DISCARD',
-      playerId: player.id
+    const discardResult = await game.eventSystem.waitForPlayerChoice<{
+      cardId: number;
+    }>({
+      type: "BOSS_BATTLE_DISCARD",
+      playerId: player.id,
     });
 
     if (discardResult.cardId) {
@@ -253,7 +271,10 @@ export class BossTile extends BaseTile {
       const success = player.removeCard(discardResult.cardId);
       if (success) {
         // 找到上一个BOSS位置或起点
-        const previousBossPosition = this.findPreviousBossPosition(game, bossBattleData.position);
+        const previousBossPosition = this.findPreviousBossPosition(
+          game,
+          bossBattleData.position
+        );
 
         // 计算剩余步数
         const stepsTaken = bossBattleData.position - previousBossPosition;
@@ -267,20 +288,27 @@ export class BossTile extends BaseTile {
           player.move(remainingSteps);
         }
 
-        console.log(`💨 ${player.name} 弃牌撤退，回到位置${previousBossPosition}`);
+        console.log(
+          `💨 ${player.name} 弃牌撤退，回到位置${previousBossPosition}`
+        );
       }
     }
   }
 
   // 找到上一个BOSS位置
-  private findPreviousBossPosition(game: Game, currentPosition: number): number {
+  private findPreviousBossPosition(
+    game: Game,
+    currentPosition: number
+  ): number {
     const bossPositions = game.gameBoard.tiles
       .filter((tile: BaseTile) => tile.type === "boss")
       .map((tile: BaseTile) => tile.position)
       .sort((a: number, b: number) => a - b);
 
     // 找到当前BOSS之前的所有BOSS位置
-    const previousBosses = bossPositions.filter((pos: number) => pos < currentPosition);
+    const previousBosses = bossPositions.filter(
+      (pos: number) => pos < currentPosition
+    );
 
     // 返回最后一个BOSS位置，如果没有则返回起点(0)
     return previousBosses.length > 0
@@ -311,13 +339,16 @@ export class TeleportTile extends BaseTile {
     }
     // 如果没找到，传送到终点
     player.position = game.gameBoard.totalTiles - 1;
-    console.log(`✨ ${player.name} 传送至终点 ${game.gameBoard.totalTiles - 1}`);
+    console.log(
+      `✨ ${player.name} 传送至终点 ${game.gameBoard.totalTiles - 1}`
+    );
   }
 }
 
 // 3D 展示支持（需要 three.js & Render 类）
 import * as THREE from "three";
 import type { Render } from "../components/Render";
+import { BossBattleStartPayload } from "../components/GameEventLayer/BossBattleStartEvent";
 
 export class Tile3D {
   public mesh: THREE.Mesh;
@@ -374,10 +405,3 @@ export interface RoleTileHandler {
   onPass?: (game: Game, player: Player, tile: BaseTile) => Promise<void> | void;
   onStay?: (game: Game, player: Player, tile: BaseTile) => Promise<void> | void;
 }
-
-
-
-
-
-
-
