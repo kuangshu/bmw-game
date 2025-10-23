@@ -3,6 +3,7 @@ import { CardDeck } from "./CardDeck";
 import { GameBoard } from "./GameBoard";
 import { BaseTile } from "./Tile";
 import { GameEventSystem } from "./GameEventSystem";
+import { Dice, DiceResult } from "./Dice";
 import { PLAYER_ROLES, ROLE_INFO, GAME_CONFIG } from "../constants/game";
 import { PlayerRoleSelectionPayload } from "../components/GameEventLayer/PlayerRoleSelectionEvent";
 
@@ -15,13 +16,6 @@ export interface GameState {
   winner: PlayerData | null;
 }
 
-// 骰子结果接口
-export interface DiceResult {
-  dice1: number;
-  dice2: number;
-  total: number;
-}
-
 export class Game {
   private _players: Player[];
   private _currentPlayerIndex: number;
@@ -30,47 +24,7 @@ export class Game {
   private _winner: Player | null;
   private _cardDeck: CardDeck;
   private _gameBoard: GameBoard;
-
-  // 当前回合的骰子投掷次数
-  private _diceRollCount: number = 0;
-
-  // 当前回合的最大投掷次数
-  private _maxDiceRolls: number = 1;
-
-  // 获取当前玩家的骰子投掷次数
-  getDiceRollCount(): number {
-    return this._diceRollCount;
-  }
-
-  // 增加当前玩家的骰子投掷次数
-  incrementDiceRollCount(): void {
-    this._diceRollCount++;
-  }
-
-  // 获取当前玩家的最大投掷次数
-  getMaxDiceRolls(): number {
-    return this._maxDiceRolls;
-  }
-
-  // 设置当前玩家的最大投掷次数
-  setMaxDiceRolls(maxRolls: number): void {
-    this._maxDiceRolls = maxRolls;
-  }
-
-  // 重置当前玩家的骰子投掷次数
-  resetDiceRollCount(): void {
-    this._diceRollCount = 0;
-  }
-
-  // 增加当前玩家的骰子投掷次数（用于额外回合法术）
-  addDiceRollCount(additionalRolls: number = 1): void {
-    this._diceRollCount += additionalRolls;
-  }
-
-  // 判断当前玩家是否可以投掷骰子
-  canRollDice(): boolean {
-    return this._diceRollCount < this._maxDiceRolls;
-  }
+  private _dice: Dice;
 
   // 事件系统
   private _eventSystem: GameEventSystem;
@@ -88,6 +42,7 @@ export class Game {
     this._winner = null;
     this._cardDeck = new CardDeck();
     this._gameBoard = new GameBoard();
+    this._dice = new Dice();
     this._eventSystem = new GameEventSystem();
   }
 
@@ -116,6 +71,54 @@ export class Game {
   get eventSystem() {
     return this._eventSystem;
   }
+  get dice(): Dice {
+    return this._dice;
+  }
+
+  // 获取当前玩家的骰子投掷次数
+  getDiceRollCount(): number {
+    return this._dice.rollCount;
+  }
+
+  // 增加当前玩家的骰子投掷次数
+  incrementDiceRollCount(): void {
+    this._dice.incrementRollCount();
+  }
+
+  // 获取当前玩家的最大投掷次数
+  getMaxDiceRolls(): number {
+    return this._dice.maxRolls;
+  }
+
+  // 设置当前玩家的最大投掷次数
+  setMaxDiceRolls(maxRolls: number): void {
+    this._dice.setMaxRolls(maxRolls);
+  }
+
+  // 重置当前玩家的骰子投掷次数
+  resetDiceRollCount(): void {
+    this._dice.resetRollCount();
+  }
+
+  // 增加当前玩家的骰子投掷次数（用于额外回合法术）
+  addDiceRollCount(additionalRolls: number = 1): void {
+    this._dice.setMaxRolls(this._dice.maxRolls + additionalRolls);
+  }
+
+  // 判断当前玩家是否可以投掷骰子
+  canRollDice(): boolean {
+    return this._dice.canRoll();
+  }
+
+  // 摇骰子
+  rollDice(): Promise<DiceResult> {
+    return this._dice.roll();
+  }
+
+  // 获取当前骰子结果
+  getDiceResult(): DiceResult | null {
+    return this._dice.result;
+  }
 
   // 初始化游戏（异步方法，等待玩家选择角色）
   async initialize(playerCount: number): Promise<void> {
@@ -134,6 +137,7 @@ export class Game {
     this._gameStarted = false; // 先不开始游戏，等待角色选择完成
     this._gameOver = false;
     this._winner = null;
+    this._dice.reset();
 
     // 创建牌堆
     this._cardDeck = CardDeck.createStandardDeck();
@@ -282,7 +286,7 @@ export class Game {
     // 重置当前玩家的骰子投掷次数
     this.resetDiceRollCount();
     // 重置最大投掷次数为默认值1
-    this._maxDiceRolls = 1;
+    this._dice.setMaxRolls(1);
     // 切换到下一个玩家
     this._currentPlayerIndex =
       (this._currentPlayerIndex + 1) % this._players.length;
@@ -307,10 +311,7 @@ export class Game {
     this._winner = null;
     this._cardDeck = new CardDeck();
     this._gameBoard = new GameBoard();
-
-    // 重置骰子投掷次数跟踪
-    this._diceRollCount = 0;
-    this._maxDiceRolls = 1;
+    this._dice.reset();
 
     // 重置移动步骤
     this._moveSteps = [];
@@ -331,11 +332,11 @@ export class Game {
   }
 
   // 处理骰子结果
-  processDiceRoll(result: DiceResult): void {
+  async processDiceRoll(result: DiceResult): Promise<void> {
     const steps = result.total;
 
     // 启动步数处理流程
-    this.processSteps(steps);
+    await this.processSteps(steps);
   }
 
   // 从数据对象创建Game实例

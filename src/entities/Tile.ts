@@ -26,16 +26,13 @@ import type { Player } from "./Player";
 export abstract class BaseTile implements TileData {
   readonly position: number;
   readonly type: TileType;
-  readonly bossRequirement?: number;
 
   constructor(
     position: number,
-    type: TileType = "empty",
-    bossRequirement?: number
+    type: TileType = "empty"
   ) {
     this.position = position;
     this.type = type;
-    this.bossRequirement = bossRequirement;
   }
   // 路过格子时异步触发（默认无事发生）
   async onPass(_game: Game, _player: Player): Promise<void> {
@@ -58,7 +55,7 @@ export abstract class BaseTile implements TileData {
       case "supply":
         return "补给站，获得2张功能牌";
       case "boss":
-        return `BOSS格，需要 ${this.bossRequirement} 点能量击败BOSS`;
+        return "BOSS格，需要足够能量击败BOSS";
       default:
         return "未知格子";
     }
@@ -73,7 +70,6 @@ export abstract class BaseTile implements TileData {
     return {
       position: this.position,
       type: this.type,
-      bossRequirement: this.bossRequirement,
     };
   }
   // 静态工厂保底
@@ -154,8 +150,11 @@ export class ReverseTile extends BaseTile {
  * BOSS格，进入BOSS战斗需要足够能量击败BOSS，否则退回上一关BOSS的格子
  */
 export class BossTile extends BaseTile {
+  readonly bossRequirement?: number;
+
   constructor(position: number, bossRequirement?: number) {
-    super(position, "boss", bossRequirement);
+    super(position, "boss");
+    this.bossRequirement = bossRequirement;
   }
   
   async onPass(game: Game, player: Player): Promise<void> {
@@ -164,6 +163,20 @@ export class BossTile extends BaseTile {
   
   async onStay(game: Game, player: Player): Promise<void> {
     await this.handleBossBattle(game, player, 0);
+  }
+  
+  // 重写 description getter 以显示 bossRequirement
+  get description(): string {
+    return `BOSS格，需要 ${this.bossRequirement || 0} 点能量击败BOSS`;
+  }
+  
+  // 重写 toJSON 方法以包含 bossRequirement
+  toJSON(): TileData {
+    return {
+      position: this.position,
+      type: this.type,
+      bossRequirement: this.bossRequirement,
+    };
   }
   
   private async handleBossBattle(

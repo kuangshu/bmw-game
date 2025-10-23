@@ -6,7 +6,7 @@ import { Player3D } from "../entities/Player";
 
 const WebGLBoard: React.FC = () => {
   const mountRef = useRef<HTMLDivElement>(null);
-  const { tiles, gameInstance } = useGameContext();
+  const { gameInstance } = useGameContext();
 
   // 从gameInstance获取游戏状态
   const gameState = gameInstance ? gameInstance.toJSON() : {
@@ -16,6 +16,9 @@ const WebGLBoard: React.FC = () => {
     gameOver: false,
     winner: null
   };
+
+  // 从gameInstance获取tiles
+  const tiles = gameInstance ? gameInstance.gameBoard.tiles : [];
 
   useEffect(() => {
     if (!mountRef.current) return;

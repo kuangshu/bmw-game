@@ -4,11 +4,11 @@ import { useGameContext } from '../contexts/GameContext'
 const DiceRoller: React.FC = () => {
   const {
     gameInstance,
-    diceResult,
-    isRolling,
     rollDice,
     canRollDice,
-    getDiceRollCount
+    getDiceRollCount,
+    getDiceResult,
+    getIsRolling
   } = useGameContext()
 
   // 从gameInstance获取游戏状态
@@ -19,6 +19,10 @@ const DiceRoller: React.FC = () => {
     gameOver: false,
     winner: null
   }
+
+  // 获取当前骰子结果和是否正在摇骰子
+  const diceResult = getDiceResult()
+  const isRolling = getIsRolling()
 
   return (
     <div className="bg-white p-4 rounded-lg shadow-md">
