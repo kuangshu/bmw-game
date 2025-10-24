@@ -6,9 +6,7 @@ export type GameEventType =
   | "SPELL_EXTRA_TURN" // 额外回合
 
   // BOSS战斗事件
-  | "BOSS_BATTLE_START" // BOSS战斗开始
   | "BOSS_BATTLE_PLAY_CARDS" // BOSS战斗出牌
-  | "BOSS_BATTLE_DISCARD" // BOSS战斗弃牌撤退
 
   // 格子事件
   | "TILE_TREASURE" // 宝箱格

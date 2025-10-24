@@ -6,7 +6,7 @@ import type { Card } from "../../entities";
 // BOSS战斗出牌事件数据类型
 export type BossBattlePlayCardsPayload = [
   { requirement: number },
-  { playedCards: Card[] },
+  { playedCards: Card[], defeatedBoss: boolean },
 ];
 
 interface BossBattlePlayCardsEventProps {
@@ -35,11 +35,29 @@ const BossBattlePlayCardsEvent: React.FC<BossBattlePlayCardsEventProps> = ({
     const playedCards = selectedCards
       .map((cardId) => player?.getCard(cardId))
       .filter(Boolean) as Card[];
-    onComplete({ playedCards });
+    
+    // 计算总能量
+    let totalEnergy = 0;
+    selectedCards.forEach((cardId) => {
+      const card = player?.getCard(cardId);
+      if (card && card.type === "energy") {
+        totalEnergy += card.value;
+      }
+    });
+    
+    // 判断是否击败BOSS
+    const defeatedBoss = totalEnergy >= requirement;
+    
+    onComplete({ playedCards, defeatedBoss });
   };
 
   const handleDiscard = () => {
-    onComplete({ playedCards: [] });
+    const playedCards = selectedCards
+      .map((cardId) => player?.getCard(cardId))
+      .filter(Boolean) as Card[];
+    
+    // 弃牌撤退，视为未击败BOSS
+    onComplete({ playedCards, defeatedBoss: false });
   };
 
   // 计算选中卡片的总能量
@@ -81,15 +99,16 @@ const BossBattlePlayCardsEvent: React.FC<BossBattlePlayCardsEventProps> = ({
 
       <div className="flex gap-2">
         <button
-          className={`bg-green-500 hover:bg-green-600 text-white rounded px-4 py-2 ${!hasEnoughEnergy && selectedCards.length > 0 ? "opacity-50 cursor-not-allowed" : ""}`}
+          className={`bg-green-500 hover:bg-green-600 text-white rounded px-4 py-2 ${!hasEnoughEnergy ? "opacity-50 cursor-not-allowed" : ""}`}
           onClick={handlePlayCards}
-          disabled={!hasEnoughEnergy && selectedCards.length > 0}
+          disabled={!hasEnoughEnergy}
         >
           出牌攻击
         </button>
         <button
-          className="bg-red-500 hover:bg-red-600 text-white rounded px-4 py-2"
+          className={`bg-red-500 hover:bg-red-600 text-white rounded px-4 py-2 ${selectedCards.length === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
           onClick={handleDiscard}
+          disabled={selectedCards.length === 0}
         >
           弃牌撤退
         </button>

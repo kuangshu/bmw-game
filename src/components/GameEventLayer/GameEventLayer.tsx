@@ -7,9 +7,7 @@ import type {
 import SpellFixDiceEvent from "./SpellFixDiceEvent";
 import SpellSwapPositionEvent from "./SpellSwapPositionEvent";
 import SpellExtraTurnEvent from "./SpellExtraTurnEvent";
-import BossBattleStartEvent from "./BossBattleStartEvent";
 import BossBattlePlayCardsEvent from "./BossBattlePlayCardsEvent";
-import BossBattleDiscardEvent from "./BossBattleDiscardEvent";
 import PlayerRoleSelectionEvent from "./PlayerRoleSelectionEvent";
 
 // 游戏事件层组件
@@ -42,9 +40,7 @@ const GameEventLayer: React.FC = () => {
       "SPELL_FIX_DICE",
       "SPELL_SWAP_POSITION",
       "SPELL_EXTRA_TURN",
-      "BOSS_BATTLE_START",
       "BOSS_BATTLE_PLAY_CARDS",
-      "BOSS_BATTLE_DISCARD",
       "TILE_TREASURE",
       "TILE_REVERSE",
       "TILE_SUPPLY",
@@ -113,23 +109,9 @@ const GameEventLayer: React.FC = () => {
             onComplete={handleEventComplete}
           />
         );
-      case "BOSS_BATTLE_START":
-        return (
-          <BossBattleStartEvent
-            eventData={currentEvent}
-            onComplete={handleEventComplete}
-          />
-        );
       case "BOSS_BATTLE_PLAY_CARDS":
         return (
           <BossBattlePlayCardsEvent
-            eventData={currentEvent}
-            onComplete={handleEventComplete}
-          />
-        );
-      case "BOSS_BATTLE_DISCARD":
-        return (
-          <BossBattleDiscardEvent
             eventData={currentEvent}
             onComplete={handleEventComplete}
           />

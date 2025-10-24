@@ -194,104 +194,38 @@ export class BossTile extends BaseTile {
       `⚔️ ${player.name} 进入BOSS战斗！需要 ${this.bossRequirement} 点能量`
     );
 
-    // 触发BOSS战斗开始事件
-    const startResult = await game.eventSystem.waitForPlayerChoice<
-      BossBattleStartPayload[0],
-      BossBattleStartPayload[1]
+    // 直接触发BOSS战斗出牌事件
+    const playResult = await game.eventSystem.waitForPlayerChoice<
+      BossBattlePlayCardsPayload[0],
+      BossBattlePlayCardsPayload[1]
     >({
-      type: "BOSS_BATTLE_START",
+      type: "BOSS_BATTLE_PLAY_CARDS",
       playerId: player.id,
       eventData: { requirement: this.bossRequirement || 0 },
     });
 
-    if (startResult.ready) {
-      // 触发BOSS战斗出牌事件
-      const playResult = await game.eventSystem.waitForPlayerChoice<{
-        playCards?: boolean;
-        discard?: boolean;
-        cardIds?: number[];
-      }>({
-        type: "BOSS_BATTLE_PLAY_CARDS",
-        playerId: player.id,
-      });
-
-      if (playResult.playCards && playResult.cardIds) {
-        // 计算选中卡片的总能量
-        let totalEnergy = 0;
-        for (const cardId of playResult.cardIds) {
-          const card = player.getCard(cardId);
-          if (card && card.type === "energy") {
-            totalEnergy += card.value;
-          }
-        }
-
-        if (totalEnergy >= this.bossRequirement) {
-          // 成功击败BOSS，移除选中的卡片
-          for (const cardId of playResult.cardIds) {
-            player.removeCard(cardId);
-          }
-          console.log(
-            `🎉 ${player.name} 使用卡片击败BOSS！总能量：${totalEnergy}`
-          );
-        } else {
-          console.log(
-            `❌ ${player.name} 卡片能量不足！总能量：${totalEnergy}，需要：${this.bossRequirement}`
-          );
-          // 能量不足，继续弃牌撤退流程
-          await this.handleBossRetreat(game, player, bossBattleData);
-        }
-      } else if (playResult.discard) {
-        // 触发弃牌撤退事件
-        await this.handleBossRetreat(game, player, bossBattleData);
+    // 移除所有选中的卡片
+    if (playResult.playedCards && playResult.playedCards.length > 0) {
+      for (const card of playResult.playedCards) {
+        player.removeCard(card.id);
       }
     }
-  }
 
-  // 处理BOSS战斗撤退
-  private async handleBossRetreat(
-    game: Game,
-    player: Player,
-    bossBattleData: {
-      position: number;
-      requirement: number;
-      originalPosition: number;
-      remainingSteps: number;
-    }
-  ): Promise<void> {
-    // 触发弃牌撤退事件
-    const discardResult = await game.eventSystem.waitForPlayerChoice<{
-      cardId: number;
-    }>({
-      type: "BOSS_BATTLE_DISCARD",
-      playerId: player.id,
-    });
+    if (playResult.defeatedBoss) {
+      // 成功击败BOSS，继续前进
+      console.log(`🎉 ${player.name} 成功击败BOSS！`);
+    } else {
+      // 未击败BOSS，回到上一关BOSS位置
+      console.log(`💨 ${player.name} 未击败BOSS，撤退到上一关`);
 
-    if (discardResult.cardId) {
-      // 移除选择的卡片
-      const success = player.removeCard(discardResult.cardId);
-      if (success) {
-        // 找到上一个BOSS位置或起点
-        const previousBossPosition = this.findPreviousBossPosition(
-          game,
-          bossBattleData.position
-        );
+      // 找到上一个BOSS位置
+      const previousBossPosition = this.findPreviousBossPosition(
+        game,
+        bossBattleData.position
+      );
 
-        // 计算剩余步数
-        const stepsTaken = bossBattleData.position - previousBossPosition;
-        const remainingSteps = bossBattleData.remainingSteps - stepsTaken;
-
-        // 将玩家移回上一个BOSS位置
-        player.position = previousBossPosition;
-
-        // 继续移动剩余步数
-        if (remainingSteps > 0) {
-          player.move(remainingSteps);
-        }
-
-        console.log(
-          `💨 ${player.name} 弃牌撤退，回到位置${previousBossPosition}`
-        );
-      }
+      // 将玩家移回上一个BOSS位置
+      player.position = previousBossPosition;
     }
   }
 
@@ -348,7 +282,7 @@ export class TeleportTile extends BaseTile {
 // 3D 展示支持（需要 three.js & Render 类）
 import * as THREE from "three";
 import type { Render } from "../components/Render";
-import { BossBattleStartPayload } from "../components/GameEventLayer/BossBattleStartEvent";
+import { BossBattlePlayCardsPayload } from "../components/GameEventLayer/BossBattlePlayCardsEvent";
 
 export class Tile3D {
   public mesh: THREE.Mesh;
