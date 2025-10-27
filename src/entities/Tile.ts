@@ -23,7 +23,7 @@ export interface TileData {
 import type { Game } from "./Game";
 import type { Player } from "./Player";
 
-export abstract class BaseTile implements TileData {
+export class BaseTile implements TileData {
   readonly position: number;
   readonly type: TileType;
 
@@ -34,10 +34,12 @@ export abstract class BaseTile implements TileData {
   // 路过格子时异步触发（默认无事发生）
   async onPass(_game: Game, _player: Player): Promise<void> {
     // 默认无事发生
+    // 注意：子类应该重写此方法以实现特定格子的路过效果
   }
   // 停留格子时异步触发（默认无事发生）
   async onStay(_game: Game, _player: Player): Promise<void> {
     // 默认无事发生
+    // 注意：子类应该重写此方法以实现特定格子的停留效果
   }
 
   // 其余接口
