@@ -9,6 +9,7 @@ import SpellSwapPositionEvent from "./SpellSwapPositionEvent";
 import SpellExtraTurnEvent from "./SpellExtraTurnEvent";
 import BossBattlePlayCardsEvent from "./BossBattlePlayCardsEvent";
 import PlayerRoleSelectionEvent from "./PlayerRoleSelectionEvent";
+import EventCardDrawEvent from "./EventCardDrawEvent";
 
 // 游戏事件层组件
 const GameEventLayer: React.FC = () => {
@@ -50,6 +51,7 @@ const GameEventLayer: React.FC = () => {
       "PLAYER_CHOICE",
       "CUSTOM",
       "PLAYER_ROLE_SELECTION",
+      "EVENT_CARD_DRAW",
     ];
 
     // 为每个事件类型订阅处理函数
@@ -119,6 +121,13 @@ const GameEventLayer: React.FC = () => {
       case "PLAYER_ROLE_SELECTION":
         return (
           <PlayerRoleSelectionEvent
+            eventData={currentEvent}
+            onComplete={handleEventComplete}
+          />
+        );
+      case "EVENT_CARD_DRAW":
+        return (
+          <EventCardDrawEvent
             eventData={currentEvent}
             onComplete={handleEventComplete}
           />

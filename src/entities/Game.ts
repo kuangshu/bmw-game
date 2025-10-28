@@ -4,6 +4,7 @@ import { GameBoard } from "./GameBoard";
 import { BaseTile } from "./Tile";
 import { GameEventSystem } from "./GameEventSystem";
 import { Dice, DiceResult } from "./Dice";
+import { EventCardDeck } from "./EventCardDeck";
 import { PLAYER_ROLES, ROLE_INFO, GAME_CONFIG } from "../constants/game";
 import { PlayerRoleSelectionPayload } from "../components/GameEventLayer/PlayerRoleSelectionEvent";
 
@@ -23,6 +24,7 @@ export class Game {
   private _gameOver: boolean;
   private _winner: Player | null;
   private _cardDeck: CardDeck;
+  private _eventCardDeck: EventCardDeck;
   private _gameBoard: GameBoard;
   private _dice: Dice;
 
@@ -41,6 +43,7 @@ export class Game {
     this._gameOver = false;
     this._winner = null;
     this._cardDeck = new CardDeck();
+    this._eventCardDeck = new EventCardDeck();
     this._gameBoard = new GameBoard();
     this._dice = new Dice();
     this._eventSystem = new GameEventSystem();
@@ -64,6 +67,9 @@ export class Game {
   }
   get cardDeck(): CardDeck {
     return this._cardDeck;
+  }
+  get eventCardDeck(): EventCardDeck {
+    return this._eventCardDeck;
   }
   get gameBoard(): GameBoard {
     return this._gameBoard;
@@ -141,6 +147,7 @@ export class Game {
 
     // 创建牌堆
     this._cardDeck = CardDeck.createStandardDeck();
+    this._eventCardDeck = EventCardDeck.createStandardEventDeck();
 
     // 所有可用的角色（使用常量）
     const availableRoles: PlayerRole[] = [...PLAYER_ROLES];
@@ -190,12 +197,25 @@ export class Game {
     this._gameStarted = true;
   }
 
-  // 获取当前玩家
+  /**
+   * 获取当前玩家
+   */
   getCurrentPlayer(): Player {
     if (!this._gameStarted || this._players.length === 0) {
       throw new Error("游戏未开始或没有玩家");
     }
     return this._players[this._currentPlayerIndex];
+  }
+
+  /**
+   * 根据玩家ID获取玩家对象
+   */
+  getPlayer(playerId: number): Player {
+    const player = this._players.find(p => p.id === playerId);
+    if (!player) {
+      throw new Error(`找不到ID为${playerId}的玩家`);
+    }
+    return player;
   }
 
   /**

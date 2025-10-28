@@ -106,11 +106,14 @@ export class TreasureTile extends BaseTile {
     super(position, "treasure");
   }
   async onStay(game: Game, player: Player): Promise<void> {
-    // 触发抽卡异步交互，game.cardDeck/integrate actual logic
-    if (!game.cardDeck.isEmpty()) {
-      const card = game.cardDeck.draw(1)[0];
-      player.addCard(card);
-    }
+    // 触发事件卡抽取事件
+    await game.eventSystem.waitForPlayerChoice({
+      type: "EVENT_CARD_DRAW",
+      playerId: player.id,
+      eventData: {
+        position: this.position,
+      },
+    });
   }
 }
 

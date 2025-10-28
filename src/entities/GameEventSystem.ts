@@ -14,6 +14,9 @@ export type GameEventType =
   | "TILE_SUPPLY" // 补给站
   | "TILE_TELEPORT" // 传送格
 
+  // 事件卡牌系统
+  | "EVENT_CARD_DRAW" // 抽取事件卡
+
   // 游戏事件
   | "GAME_OVER" // 游戏结束
   | "TURN_END" // 回合结束

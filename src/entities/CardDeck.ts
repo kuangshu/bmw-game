@@ -13,6 +13,11 @@ export class CardDeck {
     return this._cards.length
   }
 
+  // 获取牌堆中的所有卡片
+  get cards(): Card[] {
+    return [...this._cards]
+  }
+
   // 获取弃牌堆中的卡片数量
   get discardSize(): number {
     return this._discardPile.length
