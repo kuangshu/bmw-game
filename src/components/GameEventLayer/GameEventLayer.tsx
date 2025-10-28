@@ -11,6 +11,7 @@ import BossBattlePlayCardsEvent from "./BossBattlePlayCardsEvent";
 import PlayerRoleSelectionEvent from "./PlayerRoleSelectionEvent";
 import EventCardDrawEvent from "./EventCardDrawEvent";
 import PlayerSelectionUI from "./PlayerSelectionUI";
+import DiceRollEvent from "./DiceRollEvent";
 
 // 游戏事件层组件
 const GameEventLayer: React.FC = () => {
@@ -50,7 +51,7 @@ const GameEventLayer: React.FC = () => {
       "GAME_OVER",
       "TURN_END",
       "PLAYER_CHOICE",
-      "CUSTOM",
+      "DICE_ROLL",
       "PLAYER_ROLE_SELECTION",
       "EVENT_CARD_DRAW",
     ];
@@ -136,6 +137,13 @@ const GameEventLayer: React.FC = () => {
       case "PLAYER_CHOICE":
         return (
           <PlayerSelectionUI
+            eventData={currentEvent}
+            onComplete={handleEventComplete}
+          />
+        );
+      case "DICE_ROLL":
+        return (
+          <DiceRollEvent
             eventData={currentEvent}
             onComplete={handleEventComplete}
           />

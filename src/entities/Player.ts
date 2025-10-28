@@ -22,7 +22,7 @@ export type CardEffectType =
 
 export interface Card {
   id: number;
-  type: "energy" | "spell";
+  type: "energy" | "spell" | "event";
   value: number;
   name: string;
   effect?: CardEffectType;
@@ -193,15 +193,13 @@ export class ThiefPlayer extends Player {
         onPass: async (game: Game, player: Player, _tile: BaseTile) => {
           // 路过补给站也抽3张卡
           if (!game.cardDeck.isEmpty()) {
-            const drawnCards = game.cardDeck.draw(3);
-            drawnCards.forEach((card: any) => player.addCard(card));
+            game.drawCards(player, 3);
           }
         },
         onStay: async (game: Game, player: Player, _tile: BaseTile) => {
           // 停留补给站抽3张卡，而不是默认2张
           if (!game.cardDeck.isEmpty()) {
-            const drawnCards = game.cardDeck.draw(3);
-            drawnCards.forEach((card: any) => player.addCard(card));
+            game.drawCards(player, 3);
           }
         },
       },

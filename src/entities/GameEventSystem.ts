@@ -16,6 +16,7 @@ export type GameEventType =
 
   // 事件卡牌系统
   | "EVENT_CARD_DRAW" // 抽取事件卡
+  | "CARD_CHOICE" // 卡牌选择
 
   // 游戏事件
   | "GAME_OVER" // 游戏结束
@@ -23,7 +24,7 @@ export type GameEventType =
   | "PLAYER_CHOICE" // 玩家选择
   | "PLAY_CARDS" // 出牌事件
   | "PLAYER_ROLE_SELECTION" // 玩家角色选择
-  | "CUSTOM"; // 自定义事件
+  | "DICE_ROLL"; // 掷骰子事件
 
 // 事件数据接口（泛型）
 export interface GameEventData<T = any> {
@@ -124,6 +125,20 @@ export class GameEventSystem {
    * @returns Promise，解析为用户选择的结果
    */
   waitForPlayerChoice<T = any, R = any>(
+    event: Omit<GameEventData<T>, "timestamp" | "eventId">,
+  ): Promise<R> {
+    return new Promise((resolve) => {
+      const eventId = this.publishEvent(event);
+      this.pendingEvents.set(eventId, resolve);
+    });
+  }
+
+  /**
+   * 等待玩家选择卡牌（返回Promise）
+   * @param event 事件数据
+   * @returns Promise，解析为用户选择的结果
+   */
+  waitForCardChoice<T = any, R = any>(
     event: Omit<GameEventData<T>, "timestamp" | "eventId">,
   ): Promise<R> {
     return new Promise((resolve) => {

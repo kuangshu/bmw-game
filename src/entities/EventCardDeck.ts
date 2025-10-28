@@ -114,6 +114,39 @@ export class EventCardDeck {
     );
   }
 
+  // 将事件卡返回到事件卡堆（用于处理玩家手牌中的事件卡）
+  returnEventCards(cardIds: number[]): void {
+    // 从玩家保留区中查找这些卡牌
+    for (const [playerId, cards] of this._playerKeepableCards.entries()) {
+      const cardsToReturn: EventCard[] = [];
+      const remainingCards: EventCard[] = [];
+
+      // 分离需要返回的卡牌和保留的卡牌
+      for (const card of cards) {
+        if (cardIds.includes(card.id)) {
+          cardsToReturn.push(card);
+        } else {
+          remainingCards.push(card);
+        }
+      }
+
+      // 更新玩家保留区的卡牌列表
+      if (cardsToReturn.length > 0) {
+        this._playerKeepableCards.set(playerId, remainingCards);
+
+        // 将卡牌放回事件卡堆
+        this._cards.push(...cardsToReturn);
+
+        console.log(
+          `📤 玩家 ${playerId} 的 ${cardsToReturn.length} 张事件卡已返回事件卡堆`,
+        );
+      }
+    }
+
+    // 打乱牌堆顺序
+    this.shuffle();
+  }
+
   // 创建标准事件牌堆
   static createStandardEventDeck(): EventCardDeck {
     const cards = createStandardEventDeck();

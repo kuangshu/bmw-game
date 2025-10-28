@@ -36,12 +36,16 @@ const BossBattlePlayCardsEvent: React.FC<BossBattlePlayCardsEventProps> = ({
       .map((cardId) => player?.getCard(cardId))
       .filter(Boolean) as Card[];
 
-    // 计算总能量
+    // 计算总能量，包括能量卡和事件卡
     let totalEnergy = 0;
     selectedCards.forEach((cardId) => {
       const card = player?.getCard(cardId);
-      if (card && card.type === "energy") {
-        totalEnergy += card.value;
+      if (card) {
+        if (card.type === "energy") {
+          totalEnergy += card.value;
+        } else if (card.type === "event") {
+          totalEnergy += card.value;
+        }
       }
     });
 
@@ -60,13 +64,17 @@ const BossBattlePlayCardsEvent: React.FC<BossBattlePlayCardsEventProps> = ({
     onComplete({ playedCards, defeatedBoss: false });
   };
 
-  // 计算选中卡片的总能量
+  // 计算选中卡片的总能量，包括能量卡和事件卡
   const calculateTotalEnergy = () => {
     let total = 0;
     selectedCards.forEach((cardId) => {
       const card = player?.getCard(cardId);
-      if (card && card.type === "energy") {
-        total += card.value;
+      if (card) {
+        if (card.type === "energy") {
+          total += card.value;
+        } else if (card.type === "event") {
+          total += card.value;
+        }
       }
     });
     return total;
@@ -91,7 +99,11 @@ const BossBattlePlayCardsEvent: React.FC<BossBattlePlayCardsEventProps> = ({
           >
             <div>{card.name}</div>
             <div className="text-sm">
-              {card.type === "energy" ? `能量: ${card.value}` : "法术卡"}
+              {card.type === "energy"
+                ? `能量: ${card.value}`
+                : card.type === "event"
+                  ? `事件卡: ${card.value}`
+                  : "法术卡"}
             </div>
           </button>
         ))}

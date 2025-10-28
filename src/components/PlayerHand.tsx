@@ -85,7 +85,7 @@ const PlayerHand: React.FC = () => {
     if (card && card.type === "spell") {
       // 使用事件系统发布法术卡事件
       const eventSystem = gameInstance.eventSystem;
-      let eventType: GameEventType = "CUSTOM"; // 默认事件类型
+      let eventType: GameEventType = "DICE_ROLL"; // 默认事件类型
 
       // 根据法术卡效果确定事件类型
       switch (card.effect) {

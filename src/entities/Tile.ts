@@ -126,13 +126,11 @@ export class SupplyTile extends BaseTile {
   }
   async onPass(game: Game, player: Player): Promise<void> {
     // 经过补给站时抽取2张卡片
-    const drawnCards = game.cardDeck.draw(2);
-    drawnCards.forEach((card: any) => player.addCard(card));
+    game.drawCards(player, 2);
   }
   async onStay(game: Game, player: Player): Promise<void> {
     // 停留获得补给，抽取2张卡片
-    const drawnCards = game.cardDeck.draw(2);
-    drawnCards.forEach((card: any) => player.addCard(card));
+    game.drawCards(player, 2);
   }
 }
 
@@ -209,10 +207,32 @@ export class BossTile extends BaseTile {
       eventData: { requirement: this.bossRequirement || 0 },
     });
 
-    // 移除所有选中的卡片
+    // 根据卡牌类型决定弃牌去向：事件卡回到事件卡堆，功能卡回到弃牌堆
     if (playResult.playedCards && playResult.playedCards.length > 0) {
+      const eventCards: number[] = [];
+      const functionalCards: number[] = [];
+
+      // 分类卡牌
       for (const card of playResult.playedCards) {
+        if (card.type === "event") {
+          eventCards.push(card.id);
+        } else {
+          functionalCards.push(card.id);
+        }
+        // 从玩家手中移除卡牌
         player.removeCard(card.id);
+      }
+
+      // 事件卡回到事件卡堆
+      if (eventCards.length > 0) {
+        game.eventCardDeck.returnEventCards(eventCards);
+        console.log(`📤 ${eventCards.length} 张事件卡已返回事件卡堆`);
+      }
+
+      // 功能卡回到弃牌堆
+      if (functionalCards.length > 0) {
+        game.discardCards(player, functionalCards);
+        console.log(`📥 ${functionalCards.length} 张功能卡已放入弃牌堆`);
       }
     }
 

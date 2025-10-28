@@ -375,4 +375,70 @@ export class Game {
 
     return game;
   }
+
+  /**
+   * 从玩家手中弃掉指定的卡牌，并根据卡牌类型决定去向：
+   * 事件卡回到事件卡堆，功能卡回到弃牌堆
+   * @param player 玩家对象
+   * @param cardIds 要弃掉的卡牌ID数组
+   */
+  discardCards(player: Player, cardIds: number[]): void {
+    // 找到要弃掉的卡牌
+    const cardsToDiscard = player.cards.filter((card) =>
+      cardIds.includes(card.id),
+    );
+
+    // 从玩家手中移除这些卡牌
+    cardsToDiscard.forEach((card) => {
+      player.removeCard(card.id);
+    });
+
+    // 根据卡牌类型分类处理
+    const eventCards = cardsToDiscard.filter((card) => card.type === "event");
+    const functionalCards = cardsToDiscard.filter(
+      (card) => card.type !== "event",
+    );
+
+    // 事件卡回到事件卡堆
+    if (eventCards.length > 0) {
+      this._eventCardDeck.returnEventCards(eventCards.map((card) => card.id));
+      console.log(`📤 ${eventCards.length} 张事件卡已返回事件卡堆`);
+    }
+
+    // 功能卡回到弃牌堆
+    if (functionalCards.length > 0) {
+      this._cardDeck.discard(functionalCards);
+      console.log(`📥 ${functionalCards.length} 张功能卡已放入弃牌堆`);
+    }
+
+    console.log(`玩家 ${player.id} 弃掉了 ${cardsToDiscard.length} 张卡牌`);
+  }
+
+  /**
+   * 为玩家抽取指定数量的卡牌
+   * @param player 玩家对象
+   * @param count 要抽取的卡牌数量
+   */
+  drawCards(player: Player, count: number): void {
+    if (count <= 0) {
+      console.warn(
+        `无法为玩家 ${player.id} 抽取 ${count} 张卡牌，数量必须大于0`,
+      );
+      return;
+    }
+
+    try {
+      // 从卡牌堆中抽取指定数量的卡牌
+      const drawnCards = this._cardDeck.draw(count);
+
+      // 将抽到的卡牌添加到玩家手牌中
+      drawnCards.forEach((card) => {
+        player.addCard(card);
+      });
+
+      console.log(`玩家 ${player.id} 抽取了 ${drawnCards.length} 张卡牌`);
+    } catch (error) {
+      console.error(`为玩家 ${player.id} 抽取卡牌时出错:`, error);
+    }
+  }
 }
