@@ -33,7 +33,7 @@ const EventCardDrawEvent: React.FC<EventCardDrawEventProps> = ({
   // 处理卡牌选择/取消选择
   const handleToggleCard = (cardId: number) => {
     if (isProcessing) return;
-    
+
     // 如果点击的是已选中的卡牌，则取消选择
     if (selectedCardId === cardId) {
       setSelectedCardId(null);
@@ -49,7 +49,11 @@ const EventCardDrawEvent: React.FC<EventCardDrawEventProps> = ({
       setIsProcessing(true);
       // 执行选中的事件卡效果
       gameInstance.eventCardDeck
-        .executeEventCard(gameInstance, gameInstance.getCurrentPlayer(), selectedCardId)
+        .executeEventCard(
+          gameInstance,
+          gameInstance.getCurrentPlayer(),
+          selectedCardId,
+        )
         .then(() => {
           // 完成事件
           onComplete({ selectedCardId });
@@ -71,11 +75,9 @@ const EventCardDrawEvent: React.FC<EventCardDrawEventProps> = ({
     <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-6 min-w-[320px] max-w-md w-full mx-4 shadow-xl border border-indigo-100">
       <div className="text-center mb-6">
         <h2 className="font-bold text-2xl mb-2 text-indigo-800">事件卡抽取</h2>
-        <p className="text-gray-600">
-          请选择一张事件卡（点击可选中/取消选中）
-        </p>
+        <p className="text-gray-600">请选择一张事件卡（点击可选中/取消选中）</p>
       </div>
-      
+
       {/* 事件卡列表 - 隐藏具体信息 */}
       <div className="grid grid-cols-1 gap-4 max-h-96 overflow-y-auto p-2 bg-white/50 rounded-lg border border-indigo-100">
         {eventCards.map((card) => (
@@ -100,13 +102,25 @@ const EventCardDrawEvent: React.FC<EventCardDrawEventProps> = ({
                   )}
                 </div>
                 {/* 隐藏卡牌描述 */}
-                <p className="text-gray-600 mt-2 text-sm italic">卡牌信息已隐藏</p>
+                <p className="text-gray-600 mt-2 text-sm italic">
+                  卡牌信息已隐藏
+                </p>
               </div>
               {/* 选中指示器 */}
               {selectedCardId === card.id && (
                 <div className="w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center">
-                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                  <svg
+                    className="w-4 h-4 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M5 13l4 4L19 7"
+                    ></path>
                   </svg>
                 </div>
               )}
@@ -114,7 +128,7 @@ const EventCardDrawEvent: React.FC<EventCardDrawEventProps> = ({
           </div>
         ))}
       </div>
-      
+
       {/* 操作按钮 */}
       <div className="flex justify-center mt-6 gap-3">
         <button
@@ -128,9 +142,25 @@ const EventCardDrawEvent: React.FC<EventCardDrawEventProps> = ({
         >
           {isProcessing ? (
             <>
-              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              <svg
+                className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
               </svg>
               处理中...
             </>

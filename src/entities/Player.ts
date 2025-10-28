@@ -53,7 +53,7 @@ export class Player {
     role: PlayerRole = "destiny",
     position: number = 0,
     cards: Card[] = [],
-    direction: Direction = "forward"
+    direction: Direction = "forward",
   ) {
     this._id = id;
     this._name = name;
@@ -149,7 +149,7 @@ export class Player {
       data.role,
       data.position,
       data.cards,
-      data.direction
+      data.direction,
     );
   }
 
@@ -216,24 +216,30 @@ export class MilkshakePlayer extends Player {
         onPass: async (game: Game, player: Player, tile: BaseTile) => {
           // 先执行 tile 的原生处理方法
           await tile.onPass(game, player);
-          
+
           // 额外增加2步移动
           game.addMoveSteps(2);
         },
         onStay: async (game: Game, player: Player, tile: BaseTile) => {
           // 先执行 tile 的原生处理方法
           await tile.onStay(game, player);
-          
+
           // 额外增加2步移动
           game.addMoveSteps(2);
-        }
-      }
+        },
+      },
     };
   }
 }
 
 // 角色工厂函数
-export function createPlayer(id: number, name: string, role: PlayerRole, position: number = 0, cards: Card[] = []): Player {
+export function createPlayer(
+  id: number,
+  name: string,
+  role: PlayerRole,
+  position: number = 0,
+  cards: Card[] = [],
+): Player {
   switch (role) {
     case "destiny":
       return new DestinyPlayer(id, name, role, position, cards);
@@ -276,7 +282,7 @@ export class Player3D {
     mesh.position.set(
       (col - gridSize / 2) * tileSpacing,
       0.5,
-      (row - gridSize / 2) * tileSpacing
+      (row - gridSize / 2) * tileSpacing,
     );
     return mesh;
   }
@@ -289,7 +295,7 @@ export class Player3D {
     this.mesh.position.set(
       (col - gridSize / 2) * tileSpacing,
       0.5,
-      (row - gridSize / 2) * tileSpacing
+      (row - gridSize / 2) * tileSpacing,
     );
   }
 

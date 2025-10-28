@@ -184,7 +184,7 @@ export class BossTile extends BaseTile {
   private async handleBossBattle(
     game: Game,
     player: Player,
-    diceTotal: number
+    diceTotal: number,
   ): Promise<void> {
     if (!this.bossRequirement) return;
 
@@ -196,7 +196,7 @@ export class BossTile extends BaseTile {
     };
 
     console.log(
-      `⚔️ ${player.name} 进入BOSS战斗！需要 ${this.bossRequirement} 点能量`
+      `⚔️ ${player.name} 进入BOSS战斗！需要 ${this.bossRequirement} 点能量`,
     );
 
     // 直接触发BOSS战斗出牌事件
@@ -226,7 +226,7 @@ export class BossTile extends BaseTile {
       // 找到上一个BOSS位置
       const previousBossPosition = this.findPreviousBossPosition(
         game,
-        bossBattleData.position
+        bossBattleData.position,
       );
 
       // 将玩家移回上一个BOSS位置
@@ -237,7 +237,7 @@ export class BossTile extends BaseTile {
   // 找到上一个BOSS位置
   private findPreviousBossPosition(
     game: Game,
-    currentPosition: number
+    currentPosition: number,
   ): number {
     const bossPositions = game.gameBoard.tiles
       .filter((tile: BaseTile) => tile.type === "boss")
@@ -246,7 +246,7 @@ export class BossTile extends BaseTile {
 
     // 找到当前BOSS之前的所有BOSS位置
     const previousBosses = bossPositions.filter(
-      (pos: number) => pos < currentPosition
+      (pos: number) => pos < currentPosition,
     );
 
     // 返回最后一个BOSS位置，如果没有则返回起点(0)
@@ -279,7 +279,7 @@ export class TeleportTile extends BaseTile {
     // 如果没找到，传送到终点
     player.position = game.gameBoard.totalTiles - 1;
     console.log(
-      `✨ ${player.name} 传送至终点 ${game.gameBoard.totalTiles - 1}`
+      `✨ ${player.name} 传送至终点 ${game.gameBoard.totalTiles - 1}`,
     );
   }
 }
@@ -325,7 +325,7 @@ export class Tile3D {
     mesh.position.set(
       (col - gridSize / 2) * tileSpacing,
       0,
-      (row - gridSize / 2) * tileSpacing
+      (row - gridSize / 2) * tileSpacing,
     );
     return mesh;
   }

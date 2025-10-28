@@ -133,7 +133,7 @@ export class Game {
       playerCount > GAME_CONFIG.MAX_PLAYERS
     ) {
       throw new Error(
-        `玩家数量必须在${GAME_CONFIG.MIN_PLAYERS}-${GAME_CONFIG.MAX_PLAYERS}人之间`
+        `玩家数量必须在${GAME_CONFIG.MIN_PLAYERS}-${GAME_CONFIG.MAX_PLAYERS}人之间`,
       );
     }
 
@@ -184,7 +184,7 @@ export class Game {
         playerName,
         selectedRole,
         0,
-        startingCards
+        startingCards,
       );
 
       this._players.push(player);
@@ -211,7 +211,7 @@ export class Game {
    * 根据玩家ID获取玩家对象
    */
   getPlayer(playerId: number): Player {
-    const player = this._players.find(p => p.id === playerId);
+    const player = this._players.find((p) => p.id === playerId);
     if (!player) {
       throw new Error(`找不到ID为${playerId}的玩家`);
     }
@@ -259,7 +259,7 @@ export class Game {
    */
   private async handleTileEffect(
     tile: BaseTile,
-    mode: "pass" | "stay"
+    mode: "pass" | "stay",
   ): Promise<void> {
     const player = this.getCurrentPlayer();
     const handlers = (player as any).getTileHandlers?.();
@@ -286,18 +286,18 @@ export class Game {
    * 交换两个玩家的位置
    */
   public swapPosition(playerId1: number, playerId2: number): boolean {
-    const player1 = this._players.find(p => p.id === playerId1);
-    const player2 = this._players.find(p => p.id === playerId2);
-    
+    const player1 = this._players.find((p) => p.id === playerId1);
+    const player2 = this._players.find((p) => p.id === playerId2);
+
     if (!player1 || !player2) {
       return false;
     }
-    
+
     // 交换位置
     const tempPosition = player1.position;
     player1.position = player2.position;
     player2.position = tempPosition;
-    
+
     return true;
   }
 
@@ -365,7 +365,7 @@ export class Game {
 
     if (data.gameStarted) {
       game._players = data.players.map((playerData) =>
-        Player.fromData(playerData)
+        Player.fromData(playerData),
       );
       game._currentPlayerIndex = data.currentPlayerIndex;
       game._gameStarted = data.gameStarted;

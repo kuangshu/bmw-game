@@ -61,7 +61,7 @@ export class GameEventSystem {
    * @returns 事件ID，用于后续处理结果
    */
   publishEvent<T = any>(
-    event: Omit<GameEventData<T>, "timestamp" | "eventId">
+    event: Omit<GameEventData<T>, "timestamp" | "eventId">,
   ): string {
     // 生成事件ID
     const eventId = `event_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
@@ -88,7 +88,7 @@ export class GameEventSystem {
    */
   subscribe<T = any>(
     eventType: GameEventType,
-    callback: GameEventCallback<T>
+    callback: GameEventCallback<T>,
   ): void {
     this.listeners.push({ eventType, callback });
   }
@@ -100,11 +100,11 @@ export class GameEventSystem {
    */
   unsubscribe<T = any>(
     eventType: GameEventType,
-    callback: GameEventCallback<T>
+    callback: GameEventCallback<T>,
   ): void {
     this.listeners = this.listeners.filter(
       (listener) =>
-        !(listener.eventType === eventType && listener.callback === callback)
+        !(listener.eventType === eventType && listener.callback === callback),
     );
   }
 
@@ -124,7 +124,7 @@ export class GameEventSystem {
    * @returns Promise，解析为用户选择的结果
    */
   waitForPlayerChoice<T = any, R = any>(
-    event: Omit<GameEventData<T>, "timestamp" | "eventId">
+    event: Omit<GameEventData<T>, "timestamp" | "eventId">,
   ): Promise<R> {
     return new Promise((resolve) => {
       const eventId = this.publishEvent(event);

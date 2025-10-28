@@ -56,7 +56,7 @@ export class Dice {
   roll(): Promise<DiceResult> {
     return new Promise((resolve) => {
       if (!this.canRoll()) {
-        throw new Error('当前不能摇骰子');
+        throw new Error("当前不能摇骰子");
       }
 
       this._isRolling = true;
@@ -71,7 +71,7 @@ export class Dice {
         this._result = {
           dice1,
           dice2,
-          total
+          total,
         };
 
         this._isRolling = false;
@@ -100,12 +100,16 @@ export class Dice {
     return {
       result: this._result,
       rollCount: this._rollCount,
-      maxRolls: this._maxRolls
+      maxRolls: this._maxRolls,
     };
   }
 
   // 从数据创建Dice实例
-  static fromData(data: { result: DiceResult | null; rollCount: number; maxRolls: number }): Dice {
+  static fromData(data: {
+    result: DiceResult | null;
+    rollCount: number;
+    maxRolls: number;
+  }): Dice {
     const dice = new Dice();
     dice._result = data.result;
     dice._rollCount = data.rollCount;

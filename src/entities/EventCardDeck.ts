@@ -40,7 +40,7 @@ export class EventCardDeck {
   async executeEventCard(
     game: Game,
     player: Player,
-    cardId: number
+    cardId: number,
   ): Promise<void> {
     const card = this.getCard(cardId);
     if (!card) {
@@ -90,7 +90,7 @@ export class EventCardDeck {
   async useKeepableCard(
     game: Game,
     playerId: number,
-    cardId: number
+    cardId: number,
   ): Promise<void> {
     const playerCards = this._playerKeepableCards.get(playerId);
     if (!playerCards) return;
@@ -110,7 +110,7 @@ export class EventCardDeck {
     this.shuffle();
 
     console.log(
-      `🔄 ${game.getPlayer(playerId).name} 使用了事件卡: ${card.name}，卡牌已返回牌堆`
+      `🔄 ${game.getPlayer(playerId).name} 使用了事件卡: ${card.name}，卡牌已返回牌堆`,
     );
   }
 

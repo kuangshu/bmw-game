@@ -118,7 +118,7 @@ const PlayerHand: React.FC = () => {
 
     // 获取选中的卡牌信息
     const selectedCards = player.cards.filter((card) =>
-      selectedIds.includes(card.id)
+      selectedIds.includes(card.id),
     );
 
     // 完成事件并返回选中的卡牌
@@ -194,7 +194,7 @@ const PlayerHand: React.FC = () => {
       {!isPlayCardsMode &&
         selectedIds.length > 0 &&
         player.cards.find(
-          (c: any) => c.id === selectedIds[0] && c.type === "spell"
+          (c: any) => c.id === selectedIds[0] && c.type === "spell",
         ) && (
           <button
             className="mt-3 w-full py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-300"

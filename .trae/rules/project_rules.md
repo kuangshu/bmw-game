@@ -1,1 +1,1 @@
-修改完成后，使用 `npm run build` 重新编译项目。
+修改完成后，使用 `npm run format` 格式化代码，使用 `npm run build` 重新编译项目。

@@ -27,12 +27,14 @@ const SpellSwapPositionEvent: React.FC<SpellSwapPositionEventProps> = ({
   const handleSubmit = () => {
     if (targetPlayerId !== null) {
       // 检查目标玩家是否有spell_shield法术卡
-      const targetPlayer = gameState.players.find(p => p.id === targetPlayerId);
+      const targetPlayer = gameState.players.find(
+        (p) => p.id === targetPlayerId,
+      );
       if (targetPlayer) {
-        const hasShieldCard = targetPlayer.cards.some(card => 
-          card.type === 'spell' && card.effect === 'spell_shield'
+        const hasShieldCard = targetPlayer.cards.some(
+          (card) => card.type === "spell" && card.effect === "spell_shield",
         );
-        
+
         if (hasShieldCard) {
           // 目标玩家有spell_shield法术卡，显示选择界面
           setShowShieldSelection(true);
@@ -51,20 +53,23 @@ const SpellSwapPositionEvent: React.FC<SpellSwapPositionEventProps> = ({
 
   const handleSwapPosition = (useShield: boolean) => {
     if (targetPlayerId === null) return;
-    
+
     if (useShield) {
       // 目标玩家使用了spell_shield，交换位置失败
       onComplete({ targetPlayerId, success: false });
     } else {
       // 交换位置成功
-      const success = gameInstance.swapPosition(currentPlayer.id, targetPlayerId);
+      const success = gameInstance.swapPosition(
+        currentPlayer.id,
+        targetPlayerId,
+      );
       onComplete({ targetPlayerId, success });
     }
   };
 
   // 渲染spell_shield选择界面
   if (showShieldSelection) {
-    const targetPlayer = gameState.players.find(p => p.id === targetPlayerId);
+    const targetPlayer = gameState.players.find((p) => p.id === targetPlayerId);
     return (
       <div className="bg-white rounded-lg p-4 min-w-[290px] flex flex-col items-center">
         <h2 className="font-bold text-lg mb-4">铜墙铁壁防御</h2>

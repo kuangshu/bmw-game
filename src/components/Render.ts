@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+import * as THREE from "three";
 
 export class Render {
   private scene: THREE.Scene;
@@ -16,14 +16,14 @@ export class Render {
       fov,
       container.clientWidth / container.clientHeight,
       near,
-      far
+      far,
     );
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setSize(container.clientWidth, container.clientHeight);
     this.renderer.setClearColor(0x87ceeb);
     container.appendChild(this.renderer.domElement);
     this.handleResize = this.handleResize.bind(this);
-    window.addEventListener('resize', this.handleResize);
+    window.addEventListener("resize", this.handleResize);
   }
 
   public setOnRender(cb: () => void) {
@@ -50,9 +50,13 @@ export class Render {
 
   private handleResize() {
     if (!this.container) return;
-    this.camera.aspect = this.container.clientWidth / this.container.clientHeight;
+    this.camera.aspect =
+      this.container.clientWidth / this.container.clientHeight;
     this.camera.updateProjectionMatrix();
-    this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
+    this.renderer.setSize(
+      this.container.clientWidth,
+      this.container.clientHeight,
+    );
   }
 
   public render = () => {
@@ -70,7 +74,7 @@ export class Render {
 
   public dispose() {
     this.stop();
-    window.removeEventListener('resize', this.handleResize);
+    window.removeEventListener("resize", this.handleResize);
     this.renderer.dispose();
     if (this.renderer.domElement.parentNode) {
       this.renderer.domElement.parentNode.removeChild(this.renderer.domElement);

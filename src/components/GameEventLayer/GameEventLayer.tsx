@@ -10,12 +10,13 @@ import SpellExtraTurnEvent from "./SpellExtraTurnEvent";
 import BossBattlePlayCardsEvent from "./BossBattlePlayCardsEvent";
 import PlayerRoleSelectionEvent from "./PlayerRoleSelectionEvent";
 import EventCardDrawEvent from "./EventCardDrawEvent";
+import PlayerSelectionUI from "./PlayerSelectionUI";
 
 // 游戏事件层组件
 const GameEventLayer: React.FC = () => {
   const { gameInstance } = useGameContext();
   const [currentEvent, setCurrentEvent] = useState<GameEventData<any> | null>(
-    null
+    null,
   );
 
   useEffect(() => {
@@ -128,6 +129,13 @@ const GameEventLayer: React.FC = () => {
       case "EVENT_CARD_DRAW":
         return (
           <EventCardDrawEvent
+            eventData={currentEvent}
+            onComplete={handleEventComplete}
+          />
+        );
+      case "PLAYER_CHOICE":
+        return (
+          <PlayerSelectionUI
             eventData={currentEvent}
             onComplete={handleEventComplete}
           />

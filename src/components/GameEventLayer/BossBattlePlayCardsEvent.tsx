@@ -6,7 +6,7 @@ import type { Card } from "../../entities";
 // BOSS战斗出牌事件数据类型
 export type BossBattlePlayCardsPayload = [
   { requirement: number },
-  { playedCards: Card[], defeatedBoss: boolean },
+  { playedCards: Card[]; defeatedBoss: boolean },
 ];
 
 interface BossBattlePlayCardsEventProps {
@@ -27,7 +27,7 @@ const BossBattlePlayCardsEvent: React.FC<BossBattlePlayCardsEventProps> = ({
     setSelectedCards((prev) =>
       prev.includes(cardId)
         ? prev.filter((id) => id !== cardId)
-        : [...prev, cardId]
+        : [...prev, cardId],
     );
   };
 
@@ -35,7 +35,7 @@ const BossBattlePlayCardsEvent: React.FC<BossBattlePlayCardsEventProps> = ({
     const playedCards = selectedCards
       .map((cardId) => player?.getCard(cardId))
       .filter(Boolean) as Card[];
-    
+
     // 计算总能量
     let totalEnergy = 0;
     selectedCards.forEach((cardId) => {
@@ -44,10 +44,10 @@ const BossBattlePlayCardsEvent: React.FC<BossBattlePlayCardsEventProps> = ({
         totalEnergy += card.value;
       }
     });
-    
+
     // 判断是否击败BOSS
     const defeatedBoss = totalEnergy >= requirement;
-    
+
     onComplete({ playedCards, defeatedBoss });
   };
 
@@ -55,7 +55,7 @@ const BossBattlePlayCardsEvent: React.FC<BossBattlePlayCardsEventProps> = ({
     const playedCards = selectedCards
       .map((cardId) => player?.getCard(cardId))
       .filter(Boolean) as Card[];
-    
+
     // 弃牌撤退，视为未击败BOSS
     onComplete({ playedCards, defeatedBoss: false });
   };

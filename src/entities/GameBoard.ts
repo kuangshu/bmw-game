@@ -1,109 +1,122 @@
-import { BaseTile, EmptyTile, TreasureTile, SupplyTile, ReverseTile, BossTile, TileData } from './Tile'
+import {
+  BaseTile,
+  EmptyTile,
+  TreasureTile,
+  SupplyTile,
+  ReverseTile,
+  BossTile,
+  TileData,
+} from "./Tile";
 
 export class GameBoard {
-  private _tiles: BaseTile[]
-  private readonly _totalTiles: number
+  private _tiles: BaseTile[];
+  private readonly _totalTiles: number;
 
   constructor(totalTiles: number = 81) {
-    this._totalTiles = totalTiles
-    this._tiles = []
+    this._totalTiles = totalTiles;
+    this._tiles = [];
   }
 
   // 获取所有格子
   get tiles(): BaseTile[] {
-    return [...this._tiles]
+    return [...this._tiles];
   }
 
   // 获取总格子数
   get totalTiles(): number {
-    return this._totalTiles
+    return this._totalTiles;
   }
 
   // 根据位置获取格子
   getTile(position: number): BaseTile | undefined {
-    return this._tiles.find(tile => tile.position === position)
+    return this._tiles.find((tile) => tile.position === position);
   }
 
   // 设置格子
   setTiles(tiles: BaseTile[]): void {
     if (tiles.length !== this._totalTiles) {
-      throw new Error(`格子数量不匹配，期望 ${this._totalTiles} 个，实际 ${tiles.length} 个`)
+      throw new Error(
+        `格子数量不匹配，期望 ${this._totalTiles} 个，实际 ${tiles.length} 个`,
+      );
     }
-    
+
     // 验证位置连续性
     for (let i = 0; i < this._totalTiles; i++) {
-      if (!tiles.some(tile => tile.position === i)) {
-        throw new Error(`缺少位置 ${i} 的格子`)
+      if (!tiles.some((tile) => tile.position === i)) {
+        throw new Error(`缺少位置 ${i} 的格子`);
       }
     }
 
-    this._tiles = [...tiles].sort((a, b) => a.position - b.position)
+    this._tiles = [...tiles].sort((a, b) => a.position - b.position);
   }
 
   // 生成标准游戏地图
   generateStandardBoard(): void {
-    const BOSS_POSITIONS = [20, 32, 44, 56, 68, 80]
-    const BOSS_REQUIREMENTS = [8, 12, 12, 14, 18, 20]
-    
-    const tiles: BaseTile[] = []
-    const specialPositions = new Set<number>()
-    
+    const BOSS_POSITIONS = [20, 32, 44, 56, 68, 80];
+    const BOSS_REQUIREMENTS = [8, 12, 12, 14, 18, 20];
+
+    const tiles: BaseTile[] = [];
+    const specialPositions = new Set<number>();
+
     // 添加BOSS位置
-    BOSS_POSITIONS.forEach(pos => specialPositions.add(pos))
-    
+    BOSS_POSITIONS.forEach((pos) => specialPositions.add(pos));
+
     // 在每个BOSS之间至少添加一个补给站
     for (let i = 0; i < BOSS_POSITIONS.length - 1; i++) {
-      const currentBoss = BOSS_POSITIONS[i]
-      const nextBoss = BOSS_POSITIONS[i + 1]
-      
+      const currentBoss = BOSS_POSITIONS[i];
+      const nextBoss = BOSS_POSITIONS[i + 1];
+
       // 在BOSS之间随机选择一个位置作为补给站
-      const supplyPosition = Math.floor(Math.random() * (nextBoss - currentBoss - 2)) + currentBoss + 1
-      specialPositions.add(supplyPosition)
+      const supplyPosition =
+        Math.floor(Math.random() * (nextBoss - currentBoss - 2)) +
+        currentBoss +
+        1;
+      specialPositions.add(supplyPosition);
     }
-    
+
     // 添加其他特殊格子（宝箱和反转）
     for (let i = 1; i < this._totalTiles; i++) {
       if (!specialPositions.has(i)) {
         if (i % 7 === 0) {
-          specialPositions.add(i)
+          specialPositions.add(i);
         } else if (i % 9 === 0) {
-          specialPositions.add(i)
+          specialPositions.add(i);
         }
       }
-    }
-    
-    // 创建所有格子
-    for (let i = 0; i < this._totalTiles; i++) {
-      let tile: BaseTile
-      if (BOSS_POSITIONS.includes(i)) {
-        tile = new BossTile(i, BOSS_REQUIREMENTS[BOSS_POSITIONS.indexOf(i)])
-      } else if (specialPositions.has(i)) {
-        if (i % 7 === 0) {
-          tile = new TreasureTile(i)
-        } else if (i % 9 === 0) {
-          tile = new ReverseTile(i)
-        } else {
-          tile = new SupplyTile(i)
-        }
-      } else {
-        tile = new EmptyTile(i)
-      }
-      tiles.push(tile)
     }
 
-    this.setTiles(tiles)
+    // 创建所有格子
+    for (let i = 0; i < this._totalTiles; i++) {
+      let tile: BaseTile;
+      if (BOSS_POSITIONS.includes(i)) {
+        tile = new BossTile(i, BOSS_REQUIREMENTS[BOSS_POSITIONS.indexOf(i)]);
+      } else if (specialPositions.has(i)) {
+        if (i % 7 === 0) {
+          tile = new TreasureTile(i);
+        } else if (i % 9 === 0) {
+          tile = new ReverseTile(i);
+        } else {
+          tile = new SupplyTile(i);
+        }
+      } else {
+        tile = new EmptyTile(i);
+      }
+      tiles.push(tile);
+    }
+
+    this.setTiles(tiles);
   }
 
   // 序列化方法
   toJSON(): any[] {
-    return this._tiles.map(tile => tile.toJSON())
+    return this._tiles.map((tile) => tile.toJSON());
   }
 
   // 从数据对象创建GameBoard实例
   static fromData(tilesData: TileData[], totalTiles: number = 81): GameBoard {
-    const board = new GameBoard(totalTiles)
-    const tiles = tilesData.map(data => BaseTile.fromData(data))
-    board.setTiles(tiles)
-    return board
+    const board = new GameBoard(totalTiles);
+    const tiles = tilesData.map((data) => BaseTile.fromData(data));
+    board.setTiles(tiles);
+    return board;
   }
 }
