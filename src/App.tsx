@@ -1,12 +1,9 @@
-import WebGLBoard from "./components/WebGLBoard";
-import DiceRoller from "./components/DiceRoller";
-import PlayerHand from "./components/PlayerHand";
 import { useGameContext } from "./contexts/GameContext";
-import GameEventLayer from "./components/GameEventLayer/GameEventLayer";
+import WebGLBoard from "./components/WebGLBoard";
+import CollapsibleDrawer from "./components/CollapsibleDrawer";
 
 function AppContent() {
-  const { gameInstance, orientation, isMobile, initializeGame, restartGame } =
-    useGameContext();
+  const { gameInstance, initializeGame, restartGame } = useGameContext();
 
   // 从gameInstance获取游戏状态
   const gameState = gameInstance
@@ -40,11 +37,6 @@ function AppContent() {
               </button>
             ))}
           </div>
-          {isMobile && (
-            <div className="mt-4 p-3 bg-yellow-100 rounded-lg text-yellow-800 text-xs">
-              💡 提示：建议横屏以获得更好的游戏体验
-            </div>
-          )}
         </div>
       </div>
     );
@@ -76,39 +68,14 @@ function AppContent() {
   }
 
   return (
-    <div
-      className={`min-h-screen flex ${orientation === "landscape" ? "flex-row" : "flex-col"}`}
-    >
-      {/* 游戏地图区域 */}
-      <div
-        className={`${orientation === "landscape" ? "w-3/4" : "h-3/4"} relative`}
-      >
+    <div className="w-full h-screen flex flex-col bg-gray-100 overflow-hidden">
+      {/* 顶部地图区域 */}
+      <div className="flex-1 relative">
         <WebGLBoard />
       </div>
-      {/* 控制面板区域 */}
-      <div
-        className={`${orientation === "landscape" ? "w-1/4" : "h-1/4"} bg-gray-50 border-t border-l border-gray-200 overflow-auto`}
-      >
-        <div className="p-2 md:p-4 space-y-3 md:space-y-4">
-          <div className="flex justify-between items-center">
-            <button
-              onClick={restartGame}
-              className="text-xs md:text-sm text-red-600 hover:text-red-700"
-            >
-              重新开始
-            </button>
-            {isMobile && (
-              <div className="text-xs text-gray-500">
-                {orientation === "portrait" ? "竖屏" : "横屏"}
-              </div>
-            )}
-          </div>
-          <DiceRoller />
-          <PlayerHand />
-        </div>
-      </div>
-      {/* 游戏事件层 */}
-      <GameEventLayer />
+
+      {/* 底部可收起抽屉 */}
+      <CollapsibleDrawer />
     </div>
   );
 }

@@ -14,7 +14,6 @@ interface GameContextType {
   setGameInstance: (gameInstance: Game | null) => void;
 
   // 设备信息
-  orientation: "portrait" | "landscape";
   isMobile: boolean;
 
   // 游戏操作
@@ -41,26 +40,20 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   const [gameInstance, setGameInstance] = useState<Game | null>(null);
 
   // 设备信息
-  const [orientation, setOrientation] = useState<"portrait" | "landscape">(
-    "portrait",
-  );
   const [isMobile, setIsMobile] = useState(false);
 
-  // 检测设备和屏幕方向
+  // 检测设备类型
   useEffect(() => {
-    const checkDeviceAndOrientation = () => {
+    const checkDevice = () => {
       const mobile = window.innerWidth <= 768;
       setIsMobile(mobile);
-      setOrientation(
-        window.innerHeight > window.innerWidth ? "portrait" : "landscape",
-      );
     };
 
-    checkDeviceAndOrientation();
-    window.addEventListener("resize", checkDeviceAndOrientation);
+    checkDevice();
+    window.addEventListener("resize", checkDevice);
 
     return () =>
-      window.removeEventListener("resize", checkDeviceAndOrientation);
+      window.removeEventListener("resize", checkDevice);
   }, []);
 
   // 初始化游戏（异步方法，支持角色选择）
@@ -132,7 +125,6 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     setGameInstance,
 
     // 设备信息
-    orientation,
     isMobile,
 
     // 游戏操作
