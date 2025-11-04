@@ -43,19 +43,27 @@ const MapNavigator: React.FC<MapNavigatorProps> = ({ className = "" }) => {
   useEffect(() => {
     if (scrollContainerRef.current && gameState.players.length > 0) {
       const currentPlayer = gameState.players[gameState.currentPlayerIndex];
-      const tileElements = scrollContainerRef.current.querySelectorAll(".map-tile");
-      
+      const tileElements =
+        scrollContainerRef.current.querySelectorAll(".map-tile");
+
       if (tileElements[currentPlayer.position]) {
-        const targetElement = tileElements[currentPlayer.position] as HTMLElement;
-        const containerRect = scrollContainerRef.current.getBoundingClientRect();
+        const targetElement = tileElements[
+          currentPlayer.position
+        ] as HTMLElement;
+        const containerRect =
+          scrollContainerRef.current.getBoundingClientRect();
         const targetRect = targetElement.getBoundingClientRect();
-        
+
         // 计算需要滚动的距离，使当前玩家位置居中
-        const scrollLeft = targetRect.left - containerRect.left - (containerRect.width / 2) + (targetRect.width / 2);
-        
+        const scrollLeft =
+          targetRect.left -
+          containerRect.left -
+          containerRect.width / 2 +
+          targetRect.width / 2;
+
         scrollContainerRef.current.scrollTo({
           left: scrollLeft,
-          behavior: "smooth"
+          behavior: "smooth",
         });
       }
     }
@@ -134,26 +142,27 @@ const MapNavigator: React.FC<MapNavigatorProps> = ({ className = "" }) => {
               <div
                 key={index}
                 className={`map-tile relative flex flex-col items-center justify-center w-8 h-8 rounded ${getTileColor(
-                  tile.type
+                  tile.type,
                 )} text-xs`}
               >
                 {getTileIcon(tile.type)}
                 {/* 显示玩家位置 */}
-                {gameState.players.map((player, playerIndex) => (
-                  player.position === index && (
-                    <div
-                      key={playerIndex}
-                      className={`absolute -top-1 -right-1 w-3 h-3 rounded-full ${getPlayerColor(
-                        playerIndex
-                      )} border border-white ${
-                        playerIndex === gameState.currentPlayerIndex
-                          ? "ring-2 ring-offset-1 ring-blue-400"
-                          : ""
-                      }`}
-                      title={player.name}
-                    ></div>
-                  )
-                ))}
+                {gameState.players.map(
+                  (player, playerIndex) =>
+                    player.position === index && (
+                      <div
+                        key={playerIndex}
+                        className={`absolute -top-1 -right-1 w-3 h-3 rounded-full ${getPlayerColor(
+                          playerIndex,
+                        )} border border-white ${
+                          playerIndex === gameState.currentPlayerIndex
+                            ? "ring-2 ring-offset-1 ring-blue-400"
+                            : ""
+                        }`}
+                        title={player.name}
+                      ></div>
+                    ),
+                )}
                 {/* 显示格子编号 */}
                 <div className="absolute -bottom-4 text-xs text-gray-500">
                   {index}

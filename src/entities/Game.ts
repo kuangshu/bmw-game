@@ -1,4 +1,5 @@
-import { Player, PlayerData, PlayerRole, createPlayer } from "./Player";
+import { Player, PlayerData, PlayerRole, createPlayer, Card } from "./Player";
+import { AIPlayer } from "./AIPlayer";
 import { CardDeck } from "./CardDeck";
 import { GameBoard } from "./GameBoard";
 import { BaseTile } from "./Tile";
@@ -126,8 +127,50 @@ export class Game {
     return this._dice.result;
   }
 
-  // 初始化游戏（异步方法，等待玩家选择角色）
-  async initialize(playerCount: number): Promise<void> {
+  /**
+   * 创建AI玩家
+   * @param id 玩家ID
+   * @param name 玩家名称
+   * @param role 玩家角色
+   * @param position 初始位置
+   * @param cards 初始卡牌
+   * @returns AI玩家实例
+   */
+  createAIPlayer(
+    id: number,
+    name: string,
+    role: PlayerRole,
+    position: number = 0,
+    cards: Card[] = [],
+  ): AIPlayer {
+    return new AIPlayer(id, name, role, position, cards);
+  }
+
+  /**
+   * 检查当前玩家是否为AI玩家
+   */
+  isCurrentPlayerAI(): boolean {
+    const currentPlayer = this.getCurrentPlayer();
+    return currentPlayer instanceof AIPlayer;
+  }
+
+  /**
+   * 获取当前AI玩家实例
+   */
+  getCurrentAIPlayer(): AIPlayer | null {
+    if (this.isCurrentPlayerAI()) {
+      return this.getCurrentPlayer() as AIPlayer;
+    }
+    return null;
+  }
+
+  /**
+   * 初始化游戏（异步方法，等待玩家选择角色）
+   */
+  async initialize(
+    playerCount: number,
+    aiPlayerCount: number = 0,
+  ): Promise<void> {
     if (
       playerCount < GAME_CONFIG.MIN_PLAYERS ||
       playerCount > GAME_CONFIG.MAX_PLAYERS
@@ -164,28 +207,38 @@ export class Game {
         availableRoles: [...availableRoles],
         selectedRoles: [],
         totalPlayers: playerCount,
+        aiPlayerCount: aiPlayerCount,
       },
     });
 
-    // 获取所有玩家选择的角色
-    const allSelectedRoles: PlayerRole[] = roleSelectionResult.selectedRoles;
+    // 获取所有玩家选择的角色（包括人类玩家和AI玩家）
+    const playerSelections = roleSelectionResult.playerSelections;
 
-    // 为每个玩家创建角色
-    for (let i = 0; i < playerCount; i++) {
-      const selectedRole = allSelectedRoles[i];
-
+    // 根据选择结果创建所有玩家（人类玩家和AI玩家）
+    for (const selection of playerSelections) {
       // 创建玩家并分配起始手牌
       const startingCards = this._cardDeck.draw(GAME_CONFIG.STARTING_CARDS);
 
       // 使用角色工厂函数创建玩家
-      const playerName = ROLE_INFO[selectedRole]?.name || `玩家${i + 1}`;
-      const player = createPlayer(
-        i + 1,
-        playerName,
-        selectedRole,
-        0,
-        startingCards,
-      );
+      const playerName = selection.isAI
+        ? `AI-${ROLE_INFO[selection.role]?.name || "AI"}`
+        : ROLE_INFO[selection.role]?.name || `玩家${selection.playerIndex + 1}`;
+
+      const player = selection.isAI
+        ? this.createAIPlayer(
+            selection.playerIndex + 1,
+            playerName,
+            selection.role,
+            0,
+            startingCards,
+          )
+        : createPlayer(
+            selection.playerIndex + 1,
+            playerName,
+            selection.role,
+            0,
+            startingCards,
+          );
 
       this._players.push(player);
     }
@@ -310,6 +363,13 @@ export class Game {
     // 切换到下一个玩家
     this._currentPlayerIndex =
       (this._currentPlayerIndex + 1) % this._players.length;
+
+    // 如果切换到AI玩家，自动处理AI的回合
+    if (this.isCurrentPlayerAI()) {
+      this.handleAITurn().finally(() => {
+        this.nextTurn();
+      });
+    }
   }
   // 结束游戏
   endGame(winner: Player): void {
@@ -357,6 +417,146 @@ export class Game {
 
     // 启动步数处理流程
     await this.processSteps(steps);
+
+    // 如果当前玩家是AI，处理AI的决策
+    if (this.isCurrentPlayerAI()) {
+      await this.handleAITurn();
+    }
+  }
+
+  /**
+   * 处理AI玩家的回合
+   */
+  private async handleAITurn(): Promise<void> {
+    const aiPlayer = this.getCurrentAIPlayer();
+    if (!aiPlayer) return;
+
+    // 检查是否有待处理的UI选择事件
+    const pendingEvent = this.eventSystem.getPendingEvent();
+    if (pendingEvent) {
+      await this.handleAIEventDecision(aiPlayer, pendingEvent);
+      return;
+    }
+
+    // 检查AI是否可以投掷骰子
+    if (this.canRollDice()) {
+      // AI决策是否投掷骰子
+      const shouldRoll = await aiPlayer.makeDecision(
+        "SHOULD_ROLL_DICE",
+        this,
+        aiPlayer,
+        { canRoll: this.canRollDice() },
+      );
+
+      if (shouldRoll) {
+        // AI投掷骰子
+        const result = await this.rollDice();
+        console.log(`AI玩家 ${aiPlayer.name} 掷出了 ${result.total}`);
+      }
+    }
+
+    // AI决策是否使用法术卡
+    if (aiPlayer.cards.length > 0) {
+      const spellCardDecision = await aiPlayer.makeDecision(
+        "USE_SPELL_CARD",
+        this,
+        aiPlayer,
+        {
+          availableCards: aiPlayer.cards.filter(
+            (card) => card.type === "spell",
+          ),
+        },
+      );
+
+      if (spellCardDecision && spellCardDecision.data) {
+        const cardToUse = aiPlayer.cards.find(
+          (card) => card.id === spellCardDecision.data,
+        );
+        if (cardToUse) {
+          console.log(
+            `AI玩家 ${aiPlayer.name} 使用了法术卡: ${cardToUse.name}`,
+          );
+          // 这里需要根据卡牌类型执行相应的效果
+          // TODO: 实现法术卡使用逻辑
+        }
+      }
+    }
+  }
+
+  /**
+   * 处理AI玩家的事件决策
+   */
+  private async handleAIEventDecision(
+    aiPlayer: AIPlayer,
+    event: any,
+  ): Promise<void> {
+    let decisionResult: any;
+
+    switch (event.type) {
+      case "SPELL_FIX_DICE":
+        // 定身术 - 选择骰子点数
+        decisionResult = await aiPlayer.makeDecision(
+          "SELECT_DICE_VALUE",
+          this,
+          aiPlayer,
+          { min: 1, max: 6 },
+        );
+        break;
+
+      case "SPELL_SWAP_POSITION":
+        // 交换位置 - 选择目标玩家
+        const availablePlayers = this.players.filter(
+          (p) => p.id !== aiPlayer.id,
+        );
+        decisionResult = await aiPlayer.makeDecision(
+          "SELECT_PLAYER",
+          this,
+          aiPlayer,
+          { availablePlayers, description: "选择要交换位置的玩家" },
+        );
+        break;
+
+      case "PLAYER_CHOICE":
+        // 通用玩家选择
+        if (event.eventData && event.eventData.availablePlayers) {
+          decisionResult = await aiPlayer.makeDecision(
+            "SELECT_PLAYER",
+            this,
+            aiPlayer,
+            {
+              availablePlayers: event.eventData.availablePlayers,
+              description: event.eventData.description || "请选择一个玩家",
+            },
+          );
+        }
+        break;
+
+      case "PLAY_CARDS":
+        // 出牌选择
+        if (event.eventData && event.eventData.selectableCards) {
+          decisionResult = await aiPlayer.makeDecision(
+            "SELECT_CARDS",
+            this,
+            aiPlayer,
+            {
+              selectableCards: event.eventData.selectableCards,
+              minSelection: event.eventData.minSelection || 1,
+              maxSelection: event.eventData.maxSelection || 1,
+            },
+          );
+        }
+        break;
+
+      default:
+        console.warn(`AI无法处理的事件类型: ${event.type}`);
+        return;
+    }
+
+    // 完成事件处理
+    if (decisionResult) {
+      this.eventSystem.completeEvent(event.eventId, decisionResult);
+      console.log(`AI玩家 ${aiPlayer.name} 完成了事件决策:`, decisionResult);
+    }
   }
 
   // 从数据对象创建Game实例

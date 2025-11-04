@@ -8,7 +8,9 @@ interface CollapsibleDrawerProps {
   className?: string;
 }
 
-const CollapsibleDrawer: React.FC<CollapsibleDrawerProps> = ({ className = "" }) => {
+const CollapsibleDrawer: React.FC<CollapsibleDrawerProps> = ({
+  className = "",
+}) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [drawerHeight, setDrawerHeight] = useState("50vh");
   const [isDragging, setIsDragging] = useState(false);
@@ -40,9 +42,12 @@ const CollapsibleDrawer: React.FC<CollapsibleDrawerProps> = ({ className = "" })
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isDragging) return;
-      
+
       const deltaY = startY.current - e.clientY;
-      const newHeight = Math.max(150, Math.min(window.innerHeight * 0.8, startHeight.current + deltaY));
+      const newHeight = Math.max(
+        150,
+        Math.min(window.innerHeight * 0.8, startHeight.current + deltaY),
+      );
       setDrawerHeight(`${newHeight}px`);
     };
 
@@ -132,10 +137,12 @@ const CollapsibleDrawer: React.FC<CollapsibleDrawerProps> = ({ className = "" })
             {gameState.players.length > 0 && (
               <div className="bg-blue-50 p-3 rounded-lg">
                 <div className="text-sm font-medium text-blue-800">
-                  当前玩家: {gameState.players[gameState.currentPlayerIndex]?.name}
+                  当前玩家:{" "}
+                  {gameState.players[gameState.currentPlayerIndex]?.name}
                 </div>
                 <div className="text-xs text-blue-600">
-                  位置: {gameState.players[gameState.currentPlayerIndex]?.position}
+                  位置:{" "}
+                  {gameState.players[gameState.currentPlayerIndex]?.position}
                 </div>
               </div>
             )}

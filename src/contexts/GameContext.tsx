@@ -17,10 +17,13 @@ interface GameContextType {
   isMobile: boolean;
 
   // 游戏操作
-  initializeGame: (playerCount: number) => void;
+  initializeGame: (playerCount: number, aiPlayerCount?: number) => void;
   restartGame: () => void;
   rollDice: () => void;
   endTurn: () => void;
+
+  // AI相关
+  isCurrentPlayerAI: () => boolean;
 
   // 骰子投掷次数相关
   getDiceRollCount: () => number;
@@ -52,14 +55,16 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     checkDevice();
     window.addEventListener("resize", checkDevice);
 
-    return () =>
-      window.removeEventListener("resize", checkDevice);
+    return () => window.removeEventListener("resize", checkDevice);
   }, []);
 
   // 初始化游戏（异步方法，支持角色选择）
-  const initializeGame = async (playerCount: number) => {
+  const initializeGame = async (
+    playerCount: number,
+    aiPlayerCount?: number,
+  ) => {
     const game = new Game();
-    await game.initialize(playerCount);
+    await game.initialize(playerCount, aiPlayerCount);
 
     setGameInstance(game);
   };
@@ -112,6 +117,11 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     return gameInstance ? gameInstance.dice.isRolling : false;
   };
 
+  // 检查当前玩家是否为AI
+  const isCurrentPlayerAI = (): boolean => {
+    return gameInstance ? gameInstance.isCurrentPlayerAI() : false;
+  };
+
   const endTurn = () => {
     if (gameInstance) {
       gameInstance.nextTurn();
@@ -132,6 +142,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     restartGame,
     rollDice,
     endTurn,
+
+    // AI相关
+    isCurrentPlayerAI,
 
     // 骰子投掷次数相关
     getDiceRollCount,

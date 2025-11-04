@@ -22,3 +22,6 @@ export type { GameEventType, GameEventData } from "./GameEventSystem";
 export { EventCard } from "./EventCard";
 export { EventCardDeck } from "./EventCardDeck";
 export type { EventCardType } from "./EventCard";
+export { AIPlayer, AIDecisionSystem } from "./AIPlayer";
+export type { AIDecisionType, AIDecisionResult } from "./AIPlayer";
+export { ROLE_INFO } from "../constants/game";
