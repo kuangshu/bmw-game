@@ -24,7 +24,8 @@ export type GameEventType =
   | "PLAYER_CHOICE" // 玩家选择
   | "PLAY_CARDS" // 出牌事件
   | "PLAYER_ROLE_SELECTION" // 玩家角色选择
-  | "DICE_ROLL"; // 掷骰子事件
+  | "DICE_ROLL" // 掷骰子事件
+  | "UI_REFRESH"; // UI刷新事件
 
 // 事件数据接口（泛型）
 export interface GameEventData<T = any> {

@@ -9,9 +9,11 @@ import { DiceResult } from "../entities/Dice";
 import { Game } from "../entities/Game";
 
 interface GameContextType {
+  // 刷新状态
+  refresh: number;
+
   // 游戏核心状态（只保留gameInstance）
   gameInstance: Game | null;
-  setGameInstance: (gameInstance: Game | null) => void;
 
   // 设备信息
   isMobile: boolean;
@@ -21,6 +23,7 @@ interface GameContextType {
   restartGame: () => void;
   rollDice: () => void;
   endTurn: () => void;
+  forceUpdate: () => void;
 
   // AI相关
   isCurrentPlayerAI: () => boolean;
@@ -39,6 +42,7 @@ interface GameProviderProps {
 }
 
 export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
+  const [refresh, setRefresh] = useState(0);
   // 游戏核心状态（只保留gameInstance）
   const [gameInstance, setGameInstance] = useState<Game | null>(null);
 
@@ -64,9 +68,14 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     aiPlayerCount?: number,
   ) => {
     const game = new Game();
-    await game.initialize(playerCount, aiPlayerCount);
-
     setGameInstance(game);
+
+    // 订阅UI_REFRESH事件，当游戏状态改变时刷新UI
+    game.eventSystem.subscribe("UI_REFRESH", () => {
+      forceUpdate();
+    });
+
+    await game.initialize(playerCount, aiPlayerCount);
   };
 
   // 重新开始游戏
@@ -89,7 +98,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       gameInstance.incrementDiceRollCount();
 
       // 更新gameInstance以触发重新渲染
-      setGameInstance(gameInstance);
+      forceUpdate();
     } catch (error) {
       console.error("处理骰子结果时出错:", error);
       alert("游戏处理出现错误");
@@ -125,14 +134,18 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   const endTurn = () => {
     if (gameInstance) {
       gameInstance.nextTurn();
-      setGameInstance(gameInstance);
+      forceUpdate();
     }
+  };
+
+  // 强制更新组件
+  const forceUpdate = () => {
+    setRefresh((prev) => prev + 1);
   };
 
   const value: GameContextType = {
     // 游戏核心状态
     gameInstance,
-    setGameInstance,
 
     // 设备信息
     isMobile,
@@ -142,6 +155,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     restartGame,
     rollDice,
     endTurn,
+    forceUpdate,
 
     // AI相关
     isCurrentPlayerAI,
@@ -151,6 +165,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     canRollDice,
     getDiceResult,
     getIsRolling,
+
+    // 刷新状态
+    refresh,
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

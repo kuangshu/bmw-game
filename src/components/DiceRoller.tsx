@@ -26,6 +26,8 @@ const DiceRoller: React.FC = () => {
   const diceResult = getDiceResult();
   const isRolling = getIsRolling();
 
+  console.log("diceResult:", isRolling, diceResult);
+
   return (
     <div className="bg-white p-4 rounded-lg shadow-md">
       <h3 className="text-lg font-semibold mb-4">掷骰子</h3>

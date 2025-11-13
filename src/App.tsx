@@ -29,7 +29,7 @@ function AppContent() {
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-400 to-purple-600 p-4">
         <div className="bg-white p-6 md:p-8 rounded-lg shadow-xl text-center max-w-md w-full">
           <h1 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6 text-gray-800">
-            骰子闯关游戏
+            黑神话
           </h1>
           <p className="mb-4 md:mb-6 text-gray-600 text-sm md:text-base">
             选择游戏模式
@@ -150,6 +150,9 @@ function AppContent() {
         <WebGLBoard />
       </div>
 
+      {/* 交互 UI 层 */}
+      <GameEventLayer />
+
       {/* 底部可收起抽屉 */}
       <CollapsibleDrawer />
     </div>
@@ -157,6 +160,7 @@ function AppContent() {
 }
 
 import { GameProvider } from "./contexts/GameContext";
+import GameEventLayer from "./components/GameEventLayer";
 
 function App() {
   return (

@@ -15,7 +15,7 @@ import DiceRollEvent from "./DiceRollEvent";
 
 // 游戏事件层组件
 const GameEventLayer: React.FC = () => {
-  const { gameInstance } = useGameContext();
+  const { gameInstance, forceUpdate } = useGameContext();
   const [currentEvent, setCurrentEvent] = useState<GameEventData<any> | null>(
     null,
   );
@@ -85,6 +85,9 @@ const GameEventLayer: React.FC = () => {
 
     // 清除当前事件
     setCurrentEvent(null);
+
+    // 强制更新组件以反映游戏状态变化
+    forceUpdate();
   };
 
   if (!currentEvent) return null;

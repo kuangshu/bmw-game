@@ -46,7 +46,7 @@ const PlayerRoleSelectionEvent: React.FC<PlayerRoleSelectionEventProps> = ({
   const { availableRoles, totalPlayers, aiPlayerCount } =
     eventData.eventData || {};
 
-  // AI玩家自动选择角色
+  // AI玩家自动选择角色（只处理单次选择）
   const handleAIPlayerSelection = () => {
     if (!availableRoles || !totalPlayers || !aiPlayerCount) return;
 
@@ -59,7 +59,7 @@ const PlayerRoleSelectionEvent: React.FC<PlayerRoleSelectionEventProps> = ({
     ) {
       // 从可用角色中随机选择一个
       const remainingRoles = availableRoles.filter(
-        (role) => !allSelections.some((selection) => selection.role === role)
+        (role) => !allSelections.some((selection) => selection.role === role),
       );
       if (remainingRoles.length > 0) {
         const randomIndex = Math.floor(Math.random() * remainingRoles.length);
@@ -84,14 +84,6 @@ const PlayerRoleSelectionEvent: React.FC<PlayerRoleSelectionEventProps> = ({
             // 切换到下一个玩家
             const nextPlayerIndex = currentPlayerIndex + 1;
             setCurrentPlayerIndex(nextPlayerIndex);
-
-            // 直接判断下一个玩家是否为AI，如果是则调用AI选择函数
-            if (
-              nextPlayerIndex >= humanPlayerCount &&
-              nextPlayerIndex < totalPlayers
-            ) {
-              handleAIPlayerSelection();
-            }
           }
         }, 1000); // 延迟1秒，让用户看到AI选择的过程
       }
@@ -103,18 +95,23 @@ const PlayerRoleSelectionEvent: React.FC<PlayerRoleSelectionEventProps> = ({
     setCurrentPlayerIndex(0);
     setAllSelections([]);
     setSelectedRole(undefined);
-
-    // 检查第一个玩家是否为AI
-    if (totalPlayers && aiPlayerCount) {
-      const humanPlayerCount = totalPlayers - aiPlayerCount;
-      if (0 >= humanPlayerCount && 0 < totalPlayers) {
-        // 第一个玩家是AI，调用AI选择函数
-        setTimeout(() => {
-          handleAIPlayerSelection();
-        }, 500); // 短暂延迟确保状态已更新
-      }
-    }
   }, []);
+
+  // 当 currentPlayerIndex 更新时，自动处理 AI 玩家的选择
+  useEffect(() => {
+    const humanPlayerCount =
+      totalPlayers && aiPlayerCount ? totalPlayers - aiPlayerCount : 0;
+
+    // 检查当前玩家是否为 AI 玩家
+    if (
+      totalPlayers &&
+      aiPlayerCount &&
+      currentPlayerIndex >= humanPlayerCount &&
+      currentPlayerIndex < totalPlayers
+    ) {
+      handleAIPlayerSelection();
+    }
+  }, [currentPlayerIndex]);
 
   const handleRoleSelect = (role: PlayerRole) => {
     setSelectedRole(role);
@@ -140,15 +137,6 @@ const PlayerRoleSelectionEvent: React.FC<PlayerRoleSelectionEventProps> = ({
         const nextPlayerIndex = currentPlayerIndex + 1;
         setCurrentPlayerIndex(nextPlayerIndex);
         setSelectedRole(undefined);
-
-        // 直接判断下一个玩家是否为AI，如果是则调用AI选择函数
-        const humanPlayerCount = totalPlayers - (aiPlayerCount || 0);
-        if (
-          nextPlayerIndex >= humanPlayerCount &&
-          nextPlayerIndex < totalPlayers
-        ) {
-          handleAIPlayerSelection();
-        }
       }
     }
   };
@@ -205,11 +193,11 @@ const PlayerRoleSelectionEvent: React.FC<PlayerRoleSelectionEventProps> = ({
 
           // 检查角色是否已被选择
           const isRoleSelected = allSelections.some(
-            (selection) => selection.role === role
+            (selection) => selection.role === role,
           );
           // 获取选择此角色的玩家信息
           const playerSelection = allSelections.find(
-            (selection) => selection.role === role
+            (selection) => selection.role === role,
           );
 
           return (

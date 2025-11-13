@@ -8,22 +8,10 @@ const WebGLBoard: React.FC = () => {
   const mountRef = useRef<HTMLDivElement>(null);
   const { gameInstance } = useGameContext();
 
-  // 从gameInstance获取游戏状态
-  const gameState = gameInstance
-    ? gameInstance.toJSON()
-    : {
-        players: [],
-        currentPlayerIndex: 0,
-        gameStarted: false,
-        gameOver: false,
-        winner: null,
-      };
-
-  // 从gameInstance获取tiles
-  const tiles = gameInstance ? gameInstance.gameBoard.tiles : [];
+  const started = gameInstance?.gameStarted;
 
   useEffect(() => {
-    if (!mountRef.current) return;
+    if (!mountRef.current || !gameInstance || !started) return;
     const render = new Render(mountRef.current);
     // 环境 & 方向光
     import("three").then((THREE) => {
@@ -45,6 +33,8 @@ const WebGLBoard: React.FC = () => {
       ground.position.y = -0.5;
       render.addObject(ground);
     });
+    // 从gameInstance获取tiles
+    const tiles = gameInstance.gameBoard.tiles;
 
     // Tile3D 对象
     const tileObjects: Tile3D[] = tiles.map((td) => new Tile3D(td));
@@ -54,7 +44,7 @@ const WebGLBoard: React.FC = () => {
     const colorArr = [
       0xff0000, 0x0000ff, 0x00ff00, 0xffff00, 0xff00ff, 0x00ffff,
     ];
-    const playerObjects = gameState.players.map(
+    const playerObjects = gameInstance.players.map(
       (pdata, i) => new Player3D(pdata, colorArr[i % colorArr.length]),
     );
     playerObjects.forEach((p3d) => p3d.addToRender(render));
@@ -65,7 +55,7 @@ const WebGLBoard: React.FC = () => {
 
     // 动画帧内更新玩家位置
     render.setOnRender(() => {
-      gameState.players.forEach((player, index) => {
+      gameInstance.players.forEach((player, index) => {
         if (!playerObjects[index]) return;
         playerObjects[index].updatePosition(player.position);
       });
@@ -77,7 +67,7 @@ const WebGLBoard: React.FC = () => {
       playerObjects.forEach((p3d) => p3d.removeFromRender(render));
       render.dispose();
     };
-  }, [gameState, tiles]);
+  }, [gameInstance, started]);
 
   return (
     <div

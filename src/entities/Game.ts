@@ -289,6 +289,7 @@ export class Game {
       while (Math.abs(currentStep) > 0) {
         player.move(currentStep > 0 ? 1 : -1);
         const tile = this._gameBoard.getTile(player.position);
+        this.refreshUI();
         if (!tile) break;
         await this.handleTileEffect(tile, "pass"); // 路过
         if (currentStep > 0) currentStep--;
@@ -319,6 +320,8 @@ export class Game {
     const roleTileHandler = handlers?.[tile.type];
     const fn =
       mode === "pass" ? roleTileHandler?.onPass : roleTileHandler?.onStay;
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     if (fn) {
       await fn(this, player, tile);
     } else {
@@ -356,17 +359,21 @@ export class Game {
 
   // 切换到下一个回合
   nextTurn(): void {
-    // 重置当前玩家的骰子投掷次数
-    this.resetDiceRollCount();
     // 重置最大投掷次数为默认值1
     this._dice.setMaxRolls(1);
+    // 重置当前玩家的骰子投掷次数
+    this.resetDiceRollCount();
     // 切换到下一个玩家
     this._currentPlayerIndex =
       (this._currentPlayerIndex + 1) % this._players.length;
 
+    // 刷新UI
+    this.refreshUI();
+
     // 如果切换到AI玩家，自动处理AI的回合
     if (this.isCurrentPlayerAI()) {
       this.handleAITurn().finally(() => {
+        console.log("AI回合处理完成，切换到下一个回合");
         this.nextTurn();
       });
     }
@@ -417,6 +424,9 @@ export class Game {
 
     // 启动步数处理流程
     await this.processSteps(steps);
+
+    // 刷新UI
+    this.refreshUI();
 
     // 如果当前玩家是AI，处理AI的决策
     if (this.isCurrentPlayerAI()) {
@@ -559,6 +569,17 @@ export class Game {
     }
   }
 
+  /**
+   * 刷新UI
+   * 发布UI_REFRESH事件，通知UI组件进行刷新
+   */
+  refreshUI(): void {
+    this.eventSystem.publishEvent({
+      type: "UI_REFRESH",
+      playerId: this.getCurrentPlayer().id,
+    });
+  }
+
   // 从数据对象创建Game实例
   static fromData(data: GameState): Game {
     const game = new Game();
@@ -612,6 +633,9 @@ export class Game {
     }
 
     console.log(`玩家 ${player.id} 弃掉了 ${cardsToDiscard.length} 张卡牌`);
+
+    // 刷新UI
+    this.refreshUI();
   }
 
   /**
@@ -637,6 +661,9 @@ export class Game {
       });
 
       console.log(`玩家 ${player.id} 抽取了 ${drawnCards.length} 张卡牌`);
+
+      // 刷新UI
+      this.refreshUI();
     } catch (error) {
       console.error(`为玩家 ${player.id} 抽取卡牌时出错:`, error);
     }
