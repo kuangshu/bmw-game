@@ -1,8 +1,8 @@
 import React, { useRef, useEffect } from "react";
 import { useGameContext } from "../contexts/GameContext";
 import { Render } from "./Render";
-import { Tile3D } from "../entities/Tile";
-import { Player3D } from "../entities/Player";
+
+
 
 const WebGLBoard: React.FC = () => {
   const mountRef = useRef<HTMLDivElement>(null);
@@ -33,38 +33,36 @@ const WebGLBoard: React.FC = () => {
       ground.position.y = -0.5;
       render.addObject(ground);
     });
-    // 从gameInstance获取tiles
+    // 从gameInstance获取tiles并直接使用其3D渲染功能
     const tiles = gameInstance.gameBoard.tiles;
+    tiles.forEach((tile) => tile.addToRender(render));
 
-    // Tile3D 对象
-    const tileObjects: Tile3D[] = tiles.map((td) => new Tile3D(td));
-    tileObjects.forEach((t3d) => t3d.addToRender(render));
-
-    // Player3D 对象
+    // 为玩家创建3D渲染并添加到场景
     const colorArr = [
       0xff0000, 0x0000ff, 0x00ff00, 0xffff00, 0xff00ff, 0x00ffff,
     ];
-    const playerObjects = gameInstance.players.map(
-      (pdata, i) => new Player3D(pdata, colorArr[i % colorArr.length]),
-    );
-    playerObjects.forEach((p3d) => p3d.addToRender(render));
+    gameInstance.players.forEach((player, i) => {
+      // 设置玩家的颜色
+      import("three").then((THREE) => {
+        player.mesh.material = new THREE.MeshLambertMaterial({ color: colorArr[i % colorArr.length] });
+      });
+      player.addToRender(render);
+    });
 
     // 相机设置
     render.setCameraPosition(0, 15, 15);
     render.lookAt(0, 0, 0);
 
-    // 动画帧内更新玩家位置
+    // 动画帧内更新
     render.setOnRender(() => {
-      gameInstance.players.forEach((player, index) => {
-        if (!playerObjects[index]) return;
-        playerObjects[index].updatePosition(player.position);
-      });
+      // 位置更新已经在Player类的position setter中自动处理
+      // 这里可以添加其他需要每帧更新的逻辑
     });
     render.render();
 
     return () => {
-      tileObjects.forEach((t3d) => t3d.removeFromRender(render));
-      playerObjects.forEach((p3d) => p3d.removeFromRender(render));
+      tiles.forEach((tile) => tile.removeFromRender(render));
+      gameInstance.players.forEach((player) => player.removeFromRender(render));
       render.dispose();
     };
   }, [gameInstance, started]);

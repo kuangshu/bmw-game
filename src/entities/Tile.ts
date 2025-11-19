@@ -1,3 +1,10 @@
+import type { Game } from "./Game";
+import type { Player } from "./Player";
+import * as THREE from "three";
+import type { Render } from "../components/Render";
+// BOSS战斗相关类型导入
+import { BossBattlePlayCardsPayload } from "../components/GameEventLayer/BossBattlePlayCardsEvent";
+
 /**
  * 地图格子类型定义
  * - empty: 普通格子，无特殊效果
@@ -20,16 +27,56 @@ export interface TileData {
   bossRequirement?: number;
 }
 
-import type { Game } from "./Game";
-import type { Player } from "./Player";
-
 export class BaseTile implements TileData {
   readonly position: number;
   readonly type: TileType;
+  public mesh: THREE.Mesh;
 
   constructor(position: number, type: TileType = "empty") {
     this.position = position;
     this.type = type;
+    this.mesh = this.createMesh();
+  }
+
+  // 3D渲染相关方法
+  private createMesh() {
+    const gridSize = 9;
+    const tileSpacing = 2;
+    const geometry = new THREE.BoxGeometry(1.5, 0.2, 1.5);
+    let material: THREE.Material;
+    switch (this.type) {
+      case "boss":
+        material = new THREE.MeshLambertMaterial({ color: 0x800080 });
+        break;
+      case "treasure":
+        material = new THREE.MeshLambertMaterial({ color: 0xffd700 });
+        break;
+      case "reverse":
+        material = new THREE.MeshLambertMaterial({ color: 0xff4500 });
+        break;
+      case "supply":
+        material = new THREE.MeshLambertMaterial({ color: 0x32cd32 });
+        break;
+      default:
+        material = new THREE.MeshLambertMaterial({ color: 0xd3d3d3 });
+    }
+    const mesh = new THREE.Mesh(geometry, material);
+    const row = Math.floor(this.position / gridSize);
+    const col = this.position % gridSize;
+    mesh.position.set(
+      (col - gridSize / 2) * tileSpacing,
+      0,
+      (row - gridSize / 2) * tileSpacing,
+    );
+    return mesh;
+  }
+
+  public addToRender(render: Render) {
+    render.addObject(this.mesh);
+  }
+
+  public removeFromRender(render: Render) {
+    render.removeObject(this.mesh);
   }
   // 路过格子时异步触发（默认无事发生）
   async onPass(_game: Game, _player: Player): Promise<void> {
@@ -301,61 +348,6 @@ export class TeleportTile extends BaseTile {
     console.log(
       `✨ ${player.name} 传送至终点 ${game.gameBoard.totalTiles - 1}`,
     );
-  }
-}
-
-// 3D 展示支持（需要 three.js & Render 类）
-import * as THREE from "three";
-import type { Render } from "../components/Render";
-import { BossBattlePlayCardsPayload } from "../components/GameEventLayer/BossBattlePlayCardsEvent";
-
-export class Tile3D {
-  public mesh: THREE.Mesh;
-  public tileData: TileData;
-
-  constructor(tileData: TileData) {
-    this.tileData = tileData;
-    this.mesh = this.createMesh();
-  }
-
-  createMesh() {
-    const gridSize = 9;
-    const tileSpacing = 2;
-    const geometry = new THREE.BoxGeometry(1.5, 0.2, 1.5);
-    let material: THREE.Material;
-    switch (this.tileData.type) {
-      case "boss":
-        material = new THREE.MeshLambertMaterial({ color: 0x800080 });
-        break;
-      case "treasure":
-        material = new THREE.MeshLambertMaterial({ color: 0xffd700 });
-        break;
-      case "reverse":
-        material = new THREE.MeshLambertMaterial({ color: 0xff4500 });
-        break;
-      case "supply":
-        material = new THREE.MeshLambertMaterial({ color: 0x32cd32 });
-        break;
-      default:
-        material = new THREE.MeshLambertMaterial({ color: 0xd3d3d3 });
-    }
-    const mesh = new THREE.Mesh(geometry, material);
-    const row = Math.floor(this.tileData.position / gridSize);
-    const col = this.tileData.position % gridSize;
-    mesh.position.set(
-      (col - gridSize / 2) * tileSpacing,
-      0,
-      (row - gridSize / 2) * tileSpacing,
-    );
-    return mesh;
-  }
-
-  addToRender(render: Render) {
-    render.addObject(this.mesh);
-  }
-
-  removeFromRender(render: Render) {
-    render.removeObject(this.mesh);
   }
 }
 

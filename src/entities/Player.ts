@@ -1,5 +1,7 @@
 import type { Game } from "./Game";
 import type { BaseTile, RoleTileHandler } from "./Tile";
+import * as THREE from "three";
+import type { Render } from "../components/Render";
 
 // 玩家角色类型定义
 export type PlayerRole =
@@ -46,6 +48,7 @@ export class Player {
   private _cards: Card[];
   private _direction: Direction;
   private _role: PlayerRole;
+  public mesh: THREE.Mesh;
 
   constructor(
     id: number,
@@ -54,6 +57,7 @@ export class Player {
     position: number = 0,
     cards: Card[] = [],
     direction: Direction = "forward",
+    color: number = 0xff0000,
   ) {
     this._id = id;
     this._name = name;
@@ -61,6 +65,7 @@ export class Player {
     this._position = position;
     this._cards = [...cards];
     this._direction = direction;
+    this.mesh = this.createMarkerMesh(color);
   }
 
   // Getters
@@ -87,6 +92,7 @@ export class Player {
   set position(newPosition: number) {
     if (newPosition >= 0) {
       this._position = newPosition;
+      this.updateMeshPosition();
     }
   }
 
@@ -151,6 +157,43 @@ export class Player {
       data.cards,
       data.direction,
     );
+  }
+
+  // 3D渲染相关方法
+  private createMarkerMesh(color: number) {
+    const gridSize = 9;
+    const tileSpacing = 2;
+    const geometry = new THREE.SphereGeometry(0.3);
+    const material = new THREE.MeshLambertMaterial({ color });
+    const row = Math.floor(this._position / gridSize);
+    const col = this._position % gridSize;
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.set(
+      (col - gridSize / 2) * tileSpacing,
+      0.5,
+      (row - gridSize / 2) * tileSpacing,
+    );
+    return mesh;
+  }
+
+  private updateMeshPosition() {
+    const gridSize = 9;
+    const tileSpacing = 2;
+    const row = Math.floor(this._position / gridSize);
+    const col = this._position % gridSize;
+    this.mesh.position.set(
+      (col - gridSize / 2) * tileSpacing,
+      0.5,
+      (row - gridSize / 2) * tileSpacing,
+    );
+  }
+
+  public addToRender(render: Render) {
+    render.addObject(this.mesh);
+  }
+
+  public removeFromRender(render: Render) {
+    render.removeObject(this.mesh);
   }
 
   // 职业 tile 处理钩子，默认无特殊处理
@@ -237,71 +280,62 @@ export function createPlayer(
   role: PlayerRole,
   position: number = 0,
   cards: Card[] = [],
+  color: number = 0xff0000,
 ): Player {
   switch (role) {
     case "destiny":
-      return new DestinyPlayer(id, name, role, position, cards);
+      return new DestinyPlayer(
+        id,
+        name,
+        role,
+        position,
+        cards,
+        "forward",
+        color,
+      );
     case "sister_four":
-      return new SisterFourPlayer(id, name, role, position, cards);
+      return new SisterFourPlayer(
+        id,
+        name,
+        role,
+        position,
+        cards,
+        "forward",
+        color,
+      );
     case "pigsy":
-      return new PigsyPlayer(id, name, role, position, cards);
+      return new PigsyPlayer(id, name, role, position, cards, "forward", color);
     case "big_bird":
-      return new BigBirdPlayer(id, name, role, position, cards);
+      return new BigBirdPlayer(
+        id,
+        name,
+        role,
+        position,
+        cards,
+        "forward",
+        color,
+      );
     case "thief":
-      return new ThiefPlayer(id, name, role, position, cards);
+      return new ThiefPlayer(id, name, role, position, cards, "forward", color);
     case "milkshake":
-      return new MilkshakePlayer(id, name, role, position, cards);
+      return new MilkshakePlayer(
+        id,
+        name,
+        role,
+        position,
+        cards,
+        "forward",
+        color,
+      );
     default:
-      return new DestinyPlayer(id, name, "destiny", position, cards);
-  }
-}
-
-// 3D 展示支持（需要 three.js & Render 类）
-import * as THREE from "three";
-import type { Render } from "../components/Render";
-
-export class Player3D {
-  public mesh: THREE.Mesh;
-  public playerId: number;
-
-  constructor(playerData: PlayerData, color: number = 0xff0000) {
-    this.playerId = playerData.id;
-    this.mesh = this.createMarkerMesh(playerData, color);
-  }
-
-  createMarkerMesh(playerData: PlayerData, color: number) {
-    const gridSize = 9;
-    const tileSpacing = 2;
-    const geometry = new THREE.SphereGeometry(0.3);
-    const material = new THREE.MeshLambertMaterial({ color });
-    const row = Math.floor(playerData.position / gridSize);
-    const col = playerData.position % gridSize;
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.set(
-      (col - gridSize / 2) * tileSpacing,
-      0.5,
-      (row - gridSize / 2) * tileSpacing,
-    );
-    return mesh;
-  }
-
-  updatePosition(position: number) {
-    const gridSize = 9;
-    const tileSpacing = 2;
-    const row = Math.floor(position / gridSize);
-    const col = position % gridSize;
-    this.mesh.position.set(
-      (col - gridSize / 2) * tileSpacing,
-      0.5,
-      (row - gridSize / 2) * tileSpacing,
-    );
-  }
-
-  addToRender(render: Render) {
-    render.addObject(this.mesh);
-  }
-
-  removeFromRender(render: Render) {
-    render.removeObject(this.mesh);
+      return new DestinyPlayer(
+        id,
+        name,
+        "destiny",
+        position,
+        cards,
+        "forward",
+        color,
+      );
   }
 }
